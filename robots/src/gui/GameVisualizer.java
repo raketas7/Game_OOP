@@ -22,9 +22,9 @@ public class GameVisualizer extends JPanel
         Timer timer = new Timer("events generator", true);
         return timer;
     }
-    
+
     private volatile double m_robotPositionX = 100;
-    private volatile double m_robotPositionY = 100; 
+    private volatile double m_robotPositionY = 100;
     private volatile double m_robotDirection = 0; 
 
     private volatile int m_targetPositionX = 150;
@@ -120,28 +120,43 @@ public class GameVisualizer extends JPanel
             return max;
         return value;
     }
-    
-    private void moveRobot(double velocity, double angularVelocity, double duration)
-    {
+
+    private void moveRobot(double velocity, double angularVelocity, double duration) {
         velocity = applyLimits(velocity, 0, maxVelocity);
         angularVelocity = applyLimits(angularVelocity, -maxAngularVelocity, maxAngularVelocity);
-        double newX = m_robotPositionX + velocity / angularVelocity * 
-            (Math.sin(m_robotDirection  + angularVelocity * duration) -
-                Math.sin(m_robotDirection));
-        if (!Double.isFinite(newX))
-        {
+
+        double newX = m_robotPositionX + velocity / angularVelocity *
+                (Math.sin(m_robotDirection + angularVelocity * duration) -
+                        Math.sin(m_robotDirection));
+        if (!Double.isFinite(newX)) {
             newX = m_robotPositionX + velocity * duration * Math.cos(m_robotDirection);
         }
-        double newY = m_robotPositionY - velocity / angularVelocity * 
-            (Math.cos(m_robotDirection  + angularVelocity * duration) -
-                Math.cos(m_robotDirection));
-        if (!Double.isFinite(newY))
-        {
+        double newY = m_robotPositionY - velocity / angularVelocity *
+                (Math.cos(m_robotDirection + angularVelocity * duration) -
+                        Math.cos(m_robotDirection));
+        if (!Double.isFinite(newY)) {
             newY = m_robotPositionY + velocity * duration * Math.sin(m_robotDirection);
         }
+
+        // Проверка на выход за границы и телепортация на противоположную сторону
+        int windowWidth = getWidth();
+        int windowHeight = getHeight();
+
+
+        if (newX < 0) {
+            newX = windowWidth; // Телепортируем на правую границу
+        } else if (newX >= windowWidth) {
+            newX = 0; // Телепортируем на левую границу
+        }
+        if (newY < 0) {
+            newY = windowHeight; // Телепортируем на нижнюю границу
+        } else if (newY >= windowHeight) {
+            newY = 0; // Телепортируем на верхнюю границу
+        }
+
         m_robotPositionX = newX;
         m_robotPositionY = newY;
-        double newDirection = asNormalizedRadians(m_robotDirection + angularVelocity * duration); 
+        double newDirection = asNormalizedRadians(m_robotDirection + angularVelocity * duration);
         m_robotDirection = newDirection;
     }
 
@@ -188,7 +203,7 @@ public class GameVisualizer extends JPanel
         int robotCenterY = round(m_robotPositionY);
         AffineTransform t = AffineTransform.getRotateInstance(direction, robotCenterX, robotCenterY); 
         g.setTransform(t);
-        g.setColor(Color.MAGENTA);
+        g.setColor(Color.RED);
         fillOval(g, robotCenterX, robotCenterY, 30, 10);
         g.setColor(Color.BLACK);
         drawOval(g, robotCenterX, robotCenterY, 30, 10);
