@@ -3,10 +3,13 @@ package gui;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 import log.Logger;
 
@@ -19,6 +22,7 @@ public class ApplicationMenuBar {
         menuBar = new JMenuBar();
         menuBar.add(createLookAndFeelMenu());
         menuBar.add(createTestMenu());
+        menuBar.add(createExitMenu()); // Добавляем меню "Выйти"
     }
 
     public JMenuBar getMenuBar() {
@@ -69,6 +73,39 @@ public class ApplicationMenuBar {
         JMenuItem addLogMessageItem = new JMenuItem("Сообщение в лог", KeyEvent.VK_S);
         addLogMessageItem.addActionListener((event) -> Logger.debug("Новая строка"));
         return addLogMessageItem;
+    }
+
+    //создание меню "Выйти"
+    private JMenu createExitMenu() {
+        JMenu exitMenu = new JMenu("Выйти");
+        exitMenu.setMnemonic(KeyEvent.VK_Q);
+        exitMenu.getAccessibleContext().setAccessibleDescription("Выход из приложения");
+
+        JMenuItem exitMenuItem = new JMenuItem("Выйти", KeyEvent.VK_Q);
+        exitMenuItem.addActionListener((event) -> confirmAndExit());
+        exitMenu.add(exitMenuItem);
+
+        return exitMenu;
+    }
+
+    //подтверждение выхода из приложения
+    private void confirmAndExit() {
+        int option = JOptionPane.showConfirmDialog(
+                menuBar.getTopLevelAncestor(), // Родительское окно для диалога
+                "Вы уверены, что хотите выйти?", // Сообщение
+                "Подтверждение выхода", // Заголовок
+                JOptionPane.YES_NO_OPTION // Тип опций
+        );
+
+        if (option == JOptionPane.YES_NO_OPTION) {
+            exitApplication(); // Выход, если пользователь подтвердил
+        }
+    }
+
+    //обработка выхода из приложения
+    private void exitApplication() {
+        // Закрываем приложение
+        System.exit(0);
     }
 
     //динамически изменяет внешний вид приложения
