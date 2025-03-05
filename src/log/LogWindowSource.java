@@ -50,6 +50,7 @@ public class LogWindowSource {
                 }
             }
         }
+        assert activeListeners != null;
         for (LogChangeListener listener : activeListeners) {
             listener.onLogChanged();
         }
