@@ -121,7 +121,7 @@ public class GameVisualizer extends JPanel
         return value;
     }
 
-    private void moveRobot(double velocity, double angularVelocity, double duration) {
+    protected void moveRobot(double velocity, double angularVelocity, double duration) {
         velocity = applyLimits(velocity, 0, maxVelocity);
         angularVelocity = applyLimits(angularVelocity, -maxAngularVelocity, maxAngularVelocity);
 
@@ -221,5 +221,18 @@ public class GameVisualizer extends JPanel
         fillOval(g, x, y, 5, 5);
         g.setColor(Color.BLACK);
         drawOval(g, x, y, 5, 5);
+    }
+
+    public void setRobotPosition(double x, double y) {
+        m_robotPositionX = x;
+        m_robotPositionY = y;
+    }
+
+    public double getRobotPositionX() {
+        return m_robotPositionX;
+    }
+
+    public double getRobotPositionY() {
+        return m_robotPositionY;
     }
 }
