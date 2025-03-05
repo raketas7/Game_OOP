@@ -1,5 +1,3 @@
-package tests;
-
 import gui.GameVisualizer;
 import org.junit.Before;
 import org.junit.Test;

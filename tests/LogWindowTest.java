@@ -1,5 +1,3 @@
-package tests;
-
 import gui.LogWindow;
 import log.LogWindowSource;
 import org.junit.Before;

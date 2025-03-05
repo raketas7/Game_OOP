@@ -1,5 +1,3 @@
-package tests;
-
 import log.LogChangeListener;
 import log.LogEntry;
 import log.LogLevel;

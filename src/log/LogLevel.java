@@ -9,7 +9,7 @@ public enum LogLevel
     Error(4),
     Fatal(5);
     
-    private int m_iLevel;
+    private final int m_iLevel;
     
     private LogLevel(int iLevel)
     {
