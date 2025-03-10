@@ -16,7 +16,7 @@ import javax.swing.JPanel;
 public class GameVisualizer extends JPanel
 {
 
-    private static Timer initTimer() 
+    private static Timer initTimer()
     {
         return new Timer("events generator", true);
     }
@@ -134,20 +134,18 @@ public class GameVisualizer extends JPanel
             newY = m_robotPositionY + velocity * duration * Math.sin(m_robotDirection);
         }
 
-        // Проверка на выход за границы и телепортация на противоположную сторону
         int windowWidth = getWidth();
         int windowHeight = getHeight();
 
-
         if (newX < 0) {
-            newX = windowWidth; // Телепортируем на правую границу
+            newX = windowWidth; // телепорт на правую сторону
         } else if (newX >= windowWidth) {
-            newX = 0; // Телепортируем на левую границу
+            newX = 0; // телепорт на левую сторону
         }
         if (newY < 0) {
-            newY = windowHeight; // Телепортируем на нижнюю границу
+            newY = windowHeight; // телепорт на нижнюю сторону
         } else if (newY >= windowHeight) {
-            newY = 0; // Телепортируем на верхнюю границу
+            newY = 0; // телепорт на верхнюю сторону
         }
 
         m_robotPositionX = newX;
@@ -194,18 +192,16 @@ public class GameVisualizer extends JPanel
     
     private void drawRobot(Graphics2D g, int x, int y, double direction)
     {
-        int robotCenterX = round(m_robotPositionX); 
-        int robotCenterY = round(m_robotPositionY);
-        AffineTransform t = AffineTransform.getRotateInstance(direction, robotCenterX, robotCenterY); 
+        AffineTransform t = AffineTransform.getRotateInstance(direction, x, y);
         g.setTransform(t);
         g.setColor(Color.RED);
-        fillOval(g, robotCenterX, robotCenterY, 30, 10);
+        fillOval(g, x, y, 30, 10);
         g.setColor(Color.BLACK);
-        drawOval(g, robotCenterX, robotCenterY, 30, 10);
+        drawOval(g, x, y, 30, 10);
         g.setColor(Color.WHITE);
-        fillOval(g, robotCenterX  + 10, robotCenterY, 5, 5);
+        fillOval(g, x + 10, y, 5, 5);
         g.setColor(Color.BLACK);
-        drawOval(g, robotCenterX  + 10, robotCenterY, 5, 5);
+        drawOval(g, x + 10, y, 5, 5);
     }
     
     private void drawTarget(Graphics2D g, int x, int y)

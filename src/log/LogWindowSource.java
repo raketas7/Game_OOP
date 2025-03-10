@@ -36,7 +36,7 @@ public class LogWindowSource {
 
         synchronized (m_messages) {
             if (m_messages.size() == m_iQueueLength) {
-                m_messages.remove(0); // Удаляем самое старое сообщение, если достигнут лимит
+                m_messages.remove(0);
             }
             m_messages.add(entry);
         }

@@ -4,6 +4,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
+// проверка телепортации
 public class GameVisualizerTest {
 
     private TestableGameVisualizer gameVisualizer;
