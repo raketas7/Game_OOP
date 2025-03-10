@@ -1,38 +1,40 @@
 package gui;
 
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
-import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.*;
 import java.awt.event.KeyEvent;
+import java.util.Locale;
+import java.util.ResourceBundle;
 
 import log.Logger;
 
 public class ApplicationMenuBar {
 
     private final JMenuBar menuBar;
+    private final ResourceBundle bundle;
+    private final MainApplicationFrame mainFrame;
+    private final WindowCloseHandler windowCloseHandler;
 
-    //добавляет новые разделы меню через add
-    public ApplicationMenuBar() {
+    public ApplicationMenuBar(ResourceBundle bundle, MainApplicationFrame mainFrame) {
+        this.bundle = bundle;
+        this.mainFrame = mainFrame;
+        this.windowCloseHandler = new WindowCloseHandler(bundle);
         menuBar = new JMenuBar();
-        menuBar.add(createLookAndFeelMenu());
-        menuBar.add(createTestMenu());
-        menuBar.add(createExitMenu()); // Добавляем меню "Выйти"
+        menuBar.add(createLookAndFeelMenu()); // меню режима отображения
+        menuBar.add(createTestMenu()); // тестовое меню
+        menuBar.add(createLanguageMenu()); // меню языка
+        menuBar.add(createExitMenu()); // меню выйти
     }
 
     public JMenuBar getMenuBar() {
         return menuBar;
     }
 
-    //создание меню для изменения внешнего вида
+    // меню режима отображения
     private JMenu createLookAndFeelMenu() {
-        JMenu lookAndFeelMenu = new JMenu("Режим отображения");
+        JMenu lookAndFeelMenu = new JMenu(bundle.getString("lookAndFeelMenu"));
         lookAndFeelMenu.setMnemonic(KeyEvent.VK_V);
         lookAndFeelMenu.getAccessibleContext().setAccessibleDescription(
-                "Управление режимом отображения приложения");
+                bundle.getString("lookAndFeelDescription"));
 
         lookAndFeelMenu.add(createSystemLookAndFeelMenuItem());
         lookAndFeelMenu.add(createCrossPlatformLookAndFeelMenuItem());
@@ -40,80 +42,95 @@ public class ApplicationMenuBar {
         return lookAndFeelMenu;
     }
 
-    //создает подраздел меню режима отображения
+    // подраздел (системная схема)
     private JMenuItem createSystemLookAndFeelMenuItem() {
-        JMenuItem systemLookAndFeel = new JMenuItem("Системная схема", KeyEvent.VK_S);
+        JMenuItem systemLookAndFeel = new JMenuItem(bundle.getString("systemLookAndFeel"), KeyEvent.VK_S);
         systemLookAndFeel.addActionListener((event) -> setLookAndFeel(UIManager.getSystemLookAndFeelClassName()));
         return systemLookAndFeel;
     }
 
-    //создает подраздел меню режима отображения
+    // подраздел (универсальная схема)
     private JMenuItem createCrossPlatformLookAndFeelMenuItem() {
-        JMenuItem crossplatformLookAndFeel = new JMenuItem("Универсальная схема", KeyEvent.VK_S);
+        JMenuItem crossplatformLookAndFeel = new JMenuItem(bundle.getString("crossPlatformLookAndFeel"), KeyEvent.VK_U);
         crossplatformLookAndFeel.addActionListener((event) -> setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName()));
         return crossplatformLookAndFeel;
     }
 
-    //создание тестового меню для работы с окном логов
+    // тестовое меню
     private JMenu createTestMenu() {
-        JMenu testMenu = new JMenu("Тесты");
+        JMenu testMenu = new JMenu(bundle.getString("testMenu"));
         testMenu.setMnemonic(KeyEvent.VK_T);
         testMenu.getAccessibleContext().setAccessibleDescription(
-                "Тестовые команды");
+                bundle.getString("testMenuDescription"));
 
         testMenu.add(createAddLogMessageItem());
 
         return testMenu;
     }
 
-    //создание подраздела тестового меню
+    // подраздел (добавление сообщения в лог)
     private JMenuItem createAddLogMessageItem() {
-        JMenuItem addLogMessageItem = new JMenuItem("Сообщение в лог", KeyEvent.VK_S);
+        JMenuItem addLogMessageItem = new JMenuItem(bundle.getString("addLogMessageItem"), KeyEvent.VK_S);
         addLogMessageItem.addActionListener((event) -> Logger.debug("Новая строка"));
         return addLogMessageItem;
     }
 
-    //создание меню "Выйти"
-    private JMenu createExitMenu() {
-        JMenu exitMenu = new JMenu("Выйти");
-        exitMenu.setMnemonic(KeyEvent.VK_Q);
-        exitMenu.getAccessibleContext().setAccessibleDescription("Выход из приложения");
+    // меню языка
+    private JMenu createLanguageMenu() {
+        JMenu languageMenu = new JMenu(bundle.getString("languageMenu"));
+        languageMenu.setMnemonic(KeyEvent.VK_L);
 
-        JMenuItem exitMenuItem = new JMenuItem("Выйти", KeyEvent.VK_Q);
+        JMenuItem russianLanguageItem = new JMenuItem("Русский");
+        russianLanguageItem.addActionListener((event) -> changeLanguage(new Locale("ru", "RU")));
+
+        JMenuItem englishLanguageItem = new JMenuItem("English");
+        englishLanguageItem.addActionListener((event) -> changeLanguage(Locale.ENGLISH));
+
+        languageMenu.add(russianLanguageItem);
+        languageMenu.add(englishLanguageItem);
+
+        return languageMenu;
+    }
+
+    // метод для изменения языка
+    private void changeLanguage(Locale locale) {
+        mainFrame.updateLocale(locale); // Обновляем локаль в главном окне
+    }
+
+    // меню выйти
+    private JMenu createExitMenu() {
+        JMenu exitMenu = new JMenu(bundle.getString("exitMenu"));
+        exitMenu.setMnemonic(KeyEvent.VK_Q);
+        exitMenu.getAccessibleContext().setAccessibleDescription(
+                bundle.getString("exitMenuDescription"));
+
+        JMenuItem exitMenuItem = new JMenuItem(bundle.getString("exitMenuItem"), KeyEvent.VK_Q);
         exitMenuItem.addActionListener((event) -> confirmAndExit());
         exitMenu.add(exitMenuItem);
 
         return exitMenu;
     }
 
-    //подтверждение выхода из приложения
+    // подтверждение выхода
     private void confirmAndExit() {
-        int option = JOptionPane.showConfirmDialog(
-                menuBar.getTopLevelAncestor(), // Родительское окно для диалога
-                "Вы уверены, что хотите выйти?", // Сообщение
-                "Подтверждение выхода", // Заголовок
-                JOptionPane.YES_NO_OPTION // Тип опций
-        );
-
-        if (option == JOptionPane.YES_NO_OPTION) {
+        if (windowCloseHandler.confirmClose((JComponent) menuBar.getTopLevelAncestor())) {
             exitApplication(); // Выход, если пользователь подтвердил
         }
     }
 
-    //обработка выхода из приложения
+    // обработка выхода
     private void exitApplication() {
-        // Закрываем приложение
-        System.exit(0);
+        System.exit(0); // Закрываем приложение
     }
 
-    //динамически изменяет внешний вид приложения
+    // динамическое изменение внешнего вида
     private void setLookAndFeel(String className) {
         try {
             UIManager.setLookAndFeel(className);
             SwingUtilities.updateComponentTreeUI(menuBar.getTopLevelAncestor());
         } catch (ClassNotFoundException | InstantiationException
                  | IllegalAccessException | UnsupportedLookAndFeelException e) {
-            // just ignore
+            // Игнорируем ошибки
         }
     }
 }

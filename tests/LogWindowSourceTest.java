@@ -7,6 +7,7 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 import java.util.ArrayList;
 
+// проверка переполнения очереди логов и утечки
 public class LogWindowSourceTest {
 
     private LogWindowSource logWindowSource;
