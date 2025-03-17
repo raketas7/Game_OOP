@@ -1,229 +1,143 @@
 package gui;
 
-import java.awt.Color;
-import java.awt.EventQueue;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Point;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.geom.AffineTransform;
+import javax.imageio.ImageIO;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import javax.swing.JPanel;
+public class GameVisualizer extends JPanel implements KeyListener {
 
-public class GameVisualizer extends JPanel
-{
+    public static final int WINDOW_WIDTH = 1524;  // Размер окна
+    public static final int WINDOW_HEIGHT = 739;
+    public static final int MAP_SIZE = 3200;      // Размер карты
+    public static final double SPEED = 5.0;       // Скорость движения
+    public static final int ROBOT_SIZE = 30;      // Размер робота
+    public static final int BORDER_PADDING = 5;   // Граница, за которую не должен заходить робот
 
-    private static Timer initTimer()
-    {
-        return new Timer("events generator", true);
-    }
+    public double offsetX = WINDOW_WIDTH / 2.0;   // Начальное смещение камеры
+    public double offsetY = WINDOW_HEIGHT / 2.0;
 
-    private volatile double m_robotPositionX = 100;
-    private volatile double m_robotPositionY = 100;
-    private volatile double m_robotDirection = 0; 
+    public double robotX = MAP_SIZE / 2.0;        // Начальная позиция робота
+    public double robotY = MAP_SIZE / 2.0;
 
-    private volatile int m_targetPositionX = 150;
-    private volatile int m_targetPositionY = 100;
-    
-    private static final double maxVelocity = 0.1; 
-    private static final double maxAngularVelocity = 0.001; 
-    
-    public GameVisualizer() 
-    {
-        Timer m_timer = initTimer();
-        m_timer.schedule(new TimerTask()
-        {
+    public final Set<Integer> activeKeys = new HashSet<>(); // Нажатые клавиши
+    private final Timer moveTimer;
+    private BufferedImage backgroundImage;
+
+    public GameVisualizer() {
+        setPreferredSize(new Dimension(WINDOW_WIDTH, WINDOW_HEIGHT));
+        setFocusable(true);
+        requestFocusInWindow();
+        addKeyListener(this);
+
+        // Фокусировка при клике
+        addMouseListener(new MouseAdapter() {
             @Override
-            public void run()
-            {
-                onRedrawEvent();
-            }
-        }, 0, 50);
-        m_timer.schedule(new TimerTask()
-        {
-            @Override
-            public void run()
-            {
-                onModelUpdateEvent();
-            }
-        }, 0, 10);
-        addMouseListener(new MouseAdapter()
-        {
-            @Override
-            public void mouseClicked(MouseEvent e)
-            {
-                setTargetPosition(e.getPoint());
-                repaint();
+            public void mouseClicked(MouseEvent e) {
+                requestFocusInWindow();
             }
         });
+
         setDoubleBuffered(true);
-    }
 
-    protected void setTargetPosition(Point p)
-    {
-        m_targetPositionX = p.x;
-        m_targetPositionY = p.y;
-    }
-    
-    protected void onRedrawEvent()
-    {
-        EventQueue.invokeLater(this::repaint);
-    }
-
-    private static double distance(double x1, double y1, double x2, double y2)
-    {
-        double diffX = x1 - x2;
-        double diffY = y1 - y2;
-        return Math.sqrt(diffX * diffX + diffY * diffY);
-    }
-    
-    private static double angleTo(double fromX, double fromY, double toX, double toY)
-    {
-        double diffX = toX - fromX;
-        double diffY = toY - fromY;
-        
-        return asNormalizedRadians(Math.atan2(diffY, diffX));
-    }
-    
-    protected void onModelUpdateEvent()
-    {
-        double distance = distance(m_targetPositionX, m_targetPositionY, 
-            m_robotPositionX, m_robotPositionY);
-        if (distance < 0.5)
-        {
-            return;
-        }
-        double angleToTarget = angleTo(m_robotPositionX, m_robotPositionY, m_targetPositionX, m_targetPositionY);
-        double angularVelocity = 0;
-        if (angleToTarget > m_robotDirection)
-        {
-            angularVelocity = maxAngularVelocity;
-        }
-        if (angleToTarget < m_robotDirection)
-        {
-            angularVelocity = -maxAngularVelocity;
-        }
-        
-        moveRobot(maxVelocity, angularVelocity, 10);
-    }
-    
-    private static double applyLimits(double value, double min, double max)
-    {
-        if (value < min)
-            return min;
-        return Math.min(value, max);
-    }
-
-    protected void moveRobot(double velocity, double angularVelocity, double duration) {
-        velocity = applyLimits(velocity, 0, maxVelocity);
-        angularVelocity = applyLimits(angularVelocity, -maxAngularVelocity, maxAngularVelocity);
-
-        double newX = m_robotPositionX + velocity / angularVelocity *
-                (Math.sin(m_robotDirection + angularVelocity * duration) -
-                        Math.sin(m_robotDirection));
-        if (!Double.isFinite(newX)) {
-            newX = m_robotPositionX + velocity * duration * Math.cos(m_robotDirection);
-        }
-        double newY = m_robotPositionY - velocity / angularVelocity *
-                (Math.cos(m_robotDirection + angularVelocity * duration) -
-                        Math.cos(m_robotDirection));
-        if (!Double.isFinite(newY)) {
-            newY = m_robotPositionY + velocity * duration * Math.sin(m_robotDirection);
+        // Загрузка фонового изображения
+        try {
+            backgroundImage = ImageIO.read(getClass().getResource("/Resource Bundle 'textures'/background.png"));
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
-        int windowWidth = getWidth();
-        int windowHeight = getHeight();
-
-        if (newX < 0) {
-            newX = windowWidth; // телепорт на правую сторону
-        } else if (newX >= windowWidth) {
-            newX = 0; // телепорт на левую сторону
-        }
-        if (newY < 0) {
-            newY = windowHeight; // телепорт на нижнюю сторону
-        } else if (newY >= windowHeight) {
-            newY = 0; // телепорт на верхнюю сторону
-        }
-
-        m_robotPositionX = newX;
-        m_robotPositionY = newY;
-        m_robotDirection = asNormalizedRadians(m_robotDirection + angularVelocity * duration);
+        // Таймер для обновления движения
+        moveTimer = new Timer(true);
+        moveTimer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                moveRobotAndCamera();
+            }
+        }, 0, 20); // Обновление каждые 20 мс
     }
 
-    private static double asNormalizedRadians(double angle)
-    {
-        while (angle < 0)
-        {
-            angle += 2*Math.PI;
+    public void moveRobotAndCamera() {
+        double dx = 0, dy = 0;
+
+        if (activeKeys.contains(KeyEvent.VK_W) || activeKeys.contains(KeyEvent.VK_UP)) {
+            dy -= SPEED;
         }
-        while (angle >= 2*Math.PI)
-        {
-            angle -= 2*Math.PI;
+        if (activeKeys.contains(KeyEvent.VK_S) || activeKeys.contains(KeyEvent.VK_DOWN)) {
+            dy += SPEED;
         }
-        return angle;
+        if (activeKeys.contains(KeyEvent.VK_A) || activeKeys.contains(KeyEvent.VK_LEFT)) {
+            dx -= SPEED;
+        }
+        if (activeKeys.contains(KeyEvent.VK_D) || activeKeys.contains(KeyEvent.VK_RIGHT)) {
+            dx += SPEED;
+        }
+
+        // Нормализация скорости по диагонали (чтобы не было быстрее, чем по прямой)
+        if (dx != 0 && dy != 0) {
+            double normFactor = Math.sqrt(2) / 2;
+            dx *= normFactor;
+            dy *= normFactor;
+        }
+
+        // Двигаем робота
+        robotX += dx;
+        robotY += dy;
+
+        // Ограничиваем движение робота в пределах карты с учетом границы в 5 пикселей
+        robotX = Math.max(BORDER_PADDING, Math.min(robotX, MAP_SIZE - ROBOT_SIZE - BORDER_PADDING));
+        robotY = Math.max(BORDER_PADDING, Math.min(robotY, MAP_SIZE - ROBOT_SIZE - BORDER_PADDING));
+
+        // Двигаем камеру в зависимости от положения робота
+        double targetOffsetX = robotX - WINDOW_WIDTH / 2.0;
+        double targetOffsetY = robotY - WINDOW_HEIGHT / 2.0;
+
+        // Ограничиваем движение камеры в пределах карты
+        offsetX = Math.max(0, Math.min(targetOffsetX, MAP_SIZE - WINDOW_WIDTH));
+        offsetY = Math.max(0, Math.min(targetOffsetY, MAP_SIZE - WINDOW_HEIGHT));
+
+        repaint();
     }
-    
-    private static int round(double value)
-    {
-        return (int)(value + 0.5);
-    }
-    
+
     @Override
-    public void paint(Graphics g)
-    {
+    public void paint(Graphics g) {
         super.paint(g);
-        Graphics2D g2d = (Graphics2D)g; 
-        drawRobot(g2d, round(m_robotPositionX), round(m_robotPositionY), m_robotDirection);
-        drawTarget(g2d, m_targetPositionX, m_targetPositionY);
+        Graphics2D g2d = (Graphics2D) g;
+
+        // Рисуем фон с учетом смещения
+        if (backgroundImage != null) {
+            g2d.drawImage(backgroundImage, -(int) offsetX, -(int) offsetY, null);
+        }
+
+        // Рисуем робота в текущей позиции
+        drawRobot(g2d, (int) (robotX - offsetX), (int) (robotY - offsetY));
     }
-    
-    private static void fillOval(Graphics g, int centerX, int centerY, int diam1, int diam2)
-    {
-        g.fillOval(centerX - diam1 / 2, centerY - diam2 / 2, diam1, diam2);
-    }
-    
-    private static void drawOval(Graphics g, int centerX, int centerY, int diam1, int diam2)
-    {
-        g.drawOval(centerX - diam1 / 2, centerY - diam2 / 2, diam1, diam2);
-    }
-    
-    private void drawRobot(Graphics2D g, int x, int y, double direction)
-    {
-        AffineTransform t = AffineTransform.getRotateInstance(direction, x, y);
-        g.setTransform(t);
+
+    private void drawRobot(Graphics2D g, int x, int y) {
         g.setColor(Color.RED);
-        fillOval(g, x, y, 30, 10);
+        g.fillOval(x, y, ROBOT_SIZE, ROBOT_SIZE);
         g.setColor(Color.BLACK);
-        drawOval(g, x, y, 30, 10);
-        g.setColor(Color.WHITE);
-        fillOval(g, x + 10, y, 5, 5);
-        g.setColor(Color.BLACK);
-        drawOval(g, x + 10, y, 5, 5);
-    }
-    
-    private void drawTarget(Graphics2D g, int x, int y)
-    {
-        AffineTransform t = AffineTransform.getRotateInstance(0, 0, 0); 
-        g.setTransform(t);
-        g.setColor(Color.GREEN);
-        fillOval(g, x, y, 5, 5);
-        g.setColor(Color.BLACK);
-        drawOval(g, x, y, 5, 5);
+        g.drawOval(x, y, ROBOT_SIZE, ROBOT_SIZE);
     }
 
-    public void setRobotPosition(double x, double y) {
-        m_robotPositionX = x;
-        m_robotPositionY = y;
+    @Override
+    public void keyPressed(KeyEvent e) {
+        activeKeys.add(e.getKeyCode()); // Добавляем клавишу в активные
     }
 
-    public double getRobotPositionX() {
-        return m_robotPositionX;
+    @Override
+    public void keyReleased(KeyEvent e) {
+        activeKeys.remove(e.getKeyCode()); // Убираем клавишу из активных
     }
 
-    public double getRobotPositionY() {
-        return m_robotPositionY;
+    @Override
+    public void keyTyped(KeyEvent e) {
+        // Не требуется
     }
 }
