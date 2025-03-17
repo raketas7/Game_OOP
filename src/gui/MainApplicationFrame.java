@@ -35,7 +35,7 @@ public class MainApplicationFrame extends JFrame {
 
         // создание и добавление игрового окна
         GameWindow gameWindow = new GameWindow(bundle);
-        gameWindow.setSize(400, 400);
+        gameWindow.setSize(1536, 770);
         addWindow(gameWindow);
 
         // создание и установка меню
