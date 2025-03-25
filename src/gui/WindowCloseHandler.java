@@ -1,23 +1,28 @@
 package gui;
 
-import javax.swing.JComponent;
-import javax.swing.JInternalFrame;
-import javax.swing.JOptionPane;
+import javax.swing.*;
 import javax.swing.event.InternalFrameEvent;
 import javax.swing.event.InternalFrameListener;
+import java.awt.*;
 import java.util.ResourceBundle;
 
 public class WindowCloseHandler implements InternalFrameListener {
-    private final ResourceBundle bundle;
+    private ResourceBundle bundle;
 
     public WindowCloseHandler(ResourceBundle bundle) {
+        this.bundle = bundle;
+    }
+
+    public void updateBundle(ResourceBundle bundle) {
         this.bundle = bundle;
     }
 
     @Override
     public void internalFrameClosing(InternalFrameEvent e) {
         JInternalFrame frame = (JInternalFrame) e.getSource();
-        if (confirmClose(frame)) {
+        if (confirmAction(frame,
+                bundle.getString("confirmCloseWindow"),
+                bundle.getString("confirmCloseTitle"))) {
             frame.dispose();
         }
     }
@@ -40,13 +45,35 @@ public class WindowCloseHandler implements InternalFrameListener {
     @Override
     public void internalFrameDeactivated(InternalFrameEvent e) {}
 
-    public boolean confirmClose(JComponent parentComponent) {
-        int option = JOptionPane.showConfirmDialog(
+    public boolean confirmClose(Component parentComponent) {
+        return confirmAction(parentComponent,
+                bundle.getString("confirmCloseWindow"),
+                bundle.getString("confirmCloseTitle"));
+    }
+
+    public boolean confirmExit(Component parentComponent) {
+        return confirmAction(parentComponent,
+                bundle.getString("confirmCloseWindow"),
+                bundle.getString("confirmCloseTitle"));
+    }
+
+    private boolean confirmAction(Component parentComponent, String message, String title) {
+        Object[] options = {
+                bundle.getString("yesButtonText"),
+                bundle.getString("noButtonText")
+        };
+
+        int option = JOptionPane.showOptionDialog(
                 parentComponent,
-                bundle.getString("confirmExit"),
-                bundle.getString("confirmClose"),
-                JOptionPane.YES_NO_OPTION
+                message,
+                title,
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                options,
+                options[1]
         );
+
         return option == JOptionPane.YES_OPTION;
     }
 }
