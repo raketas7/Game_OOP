@@ -3,24 +3,30 @@ package gui;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.util.Locale;
 import java.util.ResourceBundle;
 import javax.swing.JDesktopPane;
 import javax.swing.JFrame;
 import javax.swing.JInternalFrame;
-import javax.swing.JOptionPane;
 import log.Logger;
 
 public class MainApplicationFrame extends JFrame {
     private final JDesktopPane desktopPane = new JDesktopPane();
     private ResourceBundle bundle;
+    private final WindowCloseHandler windowCloseHandler;
 
     public MainApplicationFrame(ResourceBundle bundle) {
         this.bundle = bundle;
+        this.windowCloseHandler = new WindowCloseHandler(bundle);
         initializeUI();
     }
 
     private void initializeUI() {
+        for (WindowListener listener : getWindowListeners()) {
+            removeWindowListener(listener);
+        }
+
         int inset = 50;
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         setBounds(inset, inset,
@@ -29,16 +35,13 @@ public class MainApplicationFrame extends JFrame {
 
         setContentPane(desktopPane);
 
-        // создание и добавление окна логов
         LogWindow logWindow = createLogWindow();
         addWindow(logWindow);
 
-        // создание и добавление игрового окна
         GameWindow gameWindow = new GameWindow(bundle);
         gameWindow.setSize(1536, 770);
         addWindow(gameWindow);
 
-        // создание и установка меню
         ApplicationMenuBar menuBar = new ApplicationMenuBar(bundle, this);
         setJMenuBar(menuBar.getMenuBar());
 
@@ -71,35 +74,23 @@ public class MainApplicationFrame extends JFrame {
     // обновление локали с сохранением размера окна
     public void updateLocale(Locale locale) {
         Rectangle bounds = getBounds();
-
         this.bundle = ResourceBundle.getBundle("messages", locale);
+        windowCloseHandler.updateBundle(this.bundle);
         recreateUI();
-
         setBounds(bounds);
     }
 
     // Пересоздание интерфейса
     private void recreateUI() {
-        getContentPane().removeAll(); // удаление
-        initializeUI(); // инициализация
-        revalidate(); // обновление
+        getContentPane().removeAll();
+        initializeUI();
+        revalidate();
         repaint();
     }
 
-    private void exitApplication() {
-        System.exit(0);
-    }
-
     private void confirmAndClose() {
-        int option = JOptionPane.showConfirmDialog(
-                this,
-                bundle.getString("confirmExit"),
-                bundle.getString("confirmClose"),
-                JOptionPane.YES_NO_OPTION
-        );
-
-        if (option == JOptionPane.YES_OPTION) {
-            exitApplication();
+        if (windowCloseHandler.confirmExit(this)) {
+            System.exit(0);
         }
     }
 }

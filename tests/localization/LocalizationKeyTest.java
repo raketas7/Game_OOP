@@ -8,25 +8,26 @@ import java.util.Set;
 import java.util.HashSet;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-// проверка наличия всех ключей в файлах с ресурсами
 public class LocalizationKeyTest {
 
     @Test
     public void testAllKeysPresent() {
-        Set<String> expectedKeys = getStrings();
+        Set<String> expectedKeys = getExpectedKeys();
 
         ResourceBundle bundleEn = ResourceBundle.getBundle("messages", new Locale("en", "EN"));
         for (String key : expectedKeys) {
-            assertTrue(bundleEn.containsKey(key), "Ключ " + key + " отсутствует в английском файле ресурсов");
+            assertTrue(bundleEn.containsKey(key),
+                    "Key '" + key + "' is missing in English resource file");
         }
 
         ResourceBundle bundleRu = ResourceBundle.getBundle("messages", new Locale("ru", "RU"));
         for (String key : expectedKeys) {
-            assertTrue(bundleRu.containsKey(key), "Ключ " + key + " отсутствует в русском файле ресурсов");
+            assertTrue(bundleRu.containsKey(key),
+                    "Key '" + key + "' is missing in Russian resource file");
         }
     }
 
-    private static Set<String> getStrings() {
+    private static Set<String> getExpectedKeys() {
         Set<String> expectedKeys = new HashSet<>();
         expectedKeys.add("lookAndFeelMenu");
         expectedKeys.add("lookAndFeelDescription");
@@ -39,11 +40,14 @@ public class LocalizationKeyTest {
         expectedKeys.add("exitMenuDescription");
         expectedKeys.add("exitMenuItem");
         expectedKeys.add("languageMenu");
-        expectedKeys.add("confirmExit");
-        expectedKeys.add("confirmClose");
+        expectedKeys.add("confirmCloseWindow");
+        expectedKeys.add("confirmCloseTitle");
         expectedKeys.add("logWindowTitle");
         expectedKeys.add("gameWindowTitle");
         expectedKeys.add("logMessage");
+        expectedKeys.add("yesButtonText");
+        expectedKeys.add("noButtonText");
+
         return expectedKeys;
     }
 }

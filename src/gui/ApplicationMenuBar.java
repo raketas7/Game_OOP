@@ -113,14 +113,9 @@ public class ApplicationMenuBar {
 
     // подтверждение выхода
     private void confirmAndExit() {
-        if (windowCloseHandler.confirmClose((JComponent) menuBar.getTopLevelAncestor())) {
-            exitApplication(); // Выход, если пользователь подтвердил
+        if (windowCloseHandler.confirmExit(this.getMenuBar())) {
+            System.exit(0);
         }
-    }
-
-    // обработка выхода
-    private void exitApplication() {
-        System.exit(0); // Закрываем приложение
     }
 
     // динамическое изменение внешнего вида

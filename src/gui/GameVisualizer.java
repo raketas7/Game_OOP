@@ -6,10 +6,8 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.Timer;
-import java.util.TimerTask;
 
 public class GameVisualizer extends JPanel implements KeyListener {
 
@@ -27,7 +25,6 @@ public class GameVisualizer extends JPanel implements KeyListener {
     public double robotY = MAP_SIZE / 2.0;
 
     public final Set<Integer> activeKeys = new HashSet<>(); // Нажатые клавиши
-    private final Timer moveTimer;
     private BufferedImage backgroundImage;
 
     public GameVisualizer() {
@@ -48,13 +45,13 @@ public class GameVisualizer extends JPanel implements KeyListener {
 
         // Загрузка фонового изображения
         try {
-            backgroundImage = ImageIO.read(getClass().getResource("/Resource Bundle 'textures'/background.png"));
+            backgroundImage = ImageIO.read(Objects.requireNonNull(getClass().getResource("/Resource Bundle 'textures'/background.png")));
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         // Таймер для обновления движения
-        moveTimer = new Timer(true);
+        Timer moveTimer = new Timer(true);
         moveTimer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
