@@ -13,6 +13,7 @@ import log.LogWindowSource;
 public class LogWindow extends JInternalFrame implements LogChangeListener {
     private final LogWindowSource m_logSource;
     private final TextArea m_logContent;
+    private final WindowCloseHandler closeHandler;
 
     public LogWindow(LogWindowSource logSource, ResourceBundle bundle) {
         super(bundle.getString("logWindowTitle"), true, true, true, true);
@@ -29,7 +30,7 @@ public class LogWindow extends JInternalFrame implements LogChangeListener {
 
         setDefaultCloseOperation(JInternalFrame.DO_NOTHING_ON_CLOSE);
 
-        WindowCloseHandler closeHandler = new WindowCloseHandler(bundle);
+        closeHandler = new WindowCloseHandler(bundle);
         addInternalFrameListener(closeHandler);
     }
 
@@ -50,5 +51,7 @@ public class LogWindow extends JInternalFrame implements LogChangeListener {
     @Override
     public void dispose() {
         m_logSource.unregisterListener(this);
+        removeInternalFrameListener(closeHandler);
+        super.dispose();
     }
 }
