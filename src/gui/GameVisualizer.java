@@ -11,24 +11,30 @@ import java.util.Timer;
 
 public class GameVisualizer extends JPanel implements KeyListener {
 
-    public static final int WINDOW_WIDTH = 1524;  // Размер окна
-    public static final int WINDOW_HEIGHT = 739;
-    public static final int MAP_SIZE = 3200;      // Размер карты
+    public static final int MAP_SIZE = 3200;      // Размер карты в пикселях
     public static final double SPEED = 5.0;       // Скорость движения
     public static final int ROBOT_SIZE = 30;      // Размер робота
     public static final int BORDER_PADDING = 5;   // Граница, за которую не должен заходить робот
 
-    public double offsetX = WINDOW_WIDTH / 2.0;   // Начальное смещение камеры
-    public double offsetY = WINDOW_HEIGHT / 2.0;
-
-    public double robotX = MAP_SIZE / 2.0;        // Начальная позиция робота
+    public double offsetX;   // Смещение камеры
+    private double offsetY;
+    public double robotX = MAP_SIZE / 2.0;        // Позиция робота
     public double robotY = MAP_SIZE / 2.0;
 
     public final Set<Integer> activeKeys = new HashSet<>(); // Нажатые клавиши
     private BufferedImage backgroundImage;
+    private Dimension lastSize; // Последний известный размер панели
 
     public GameVisualizer() {
-        setPreferredSize(new Dimension(WINDOW_WIDTH, WINDOW_HEIGHT));
+        // Устанавливаем начальный размер панели
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        setPreferredSize(screenSize);
+        lastSize = screenSize;
+
+        // Начальное смещение камеры (центрируем на роботе)
+        offsetX = robotX - screenSize.width / 2.0;
+        offsetY = robotY - screenSize.height / 2.0;
+
         setFocusable(true);
         requestFocusInWindow();
         addKeyListener(this);
@@ -76,7 +82,7 @@ public class GameVisualizer extends JPanel implements KeyListener {
             dx += SPEED;
         }
 
-        // Нормализация скорости по диагонали (чтобы не было быстрее, чем по прямой)
+        // Нормализация скорости по диагонали
         if (dx != 0 && dy != 0) {
             double normFactor = Math.sqrt(2) / 2;
             dx *= normFactor;
@@ -87,24 +93,30 @@ public class GameVisualizer extends JPanel implements KeyListener {
         robotX += dx;
         robotY += dy;
 
-        // Ограничиваем движение робота в пределах карты с учетом границы в 5 пикселей
+        // Ограничиваем движение робота в пределах карты с учетом границы
         robotX = Math.max(BORDER_PADDING, Math.min(robotX, MAP_SIZE - ROBOT_SIZE - BORDER_PADDING));
         robotY = Math.max(BORDER_PADDING, Math.min(robotY, MAP_SIZE - ROBOT_SIZE - BORDER_PADDING));
 
+        // Обновляем размер панели
+        Dimension currentSize = getSize();
+        if (!currentSize.equals(lastSize)) {
+            lastSize = currentSize;
+        }
+
         // Двигаем камеру в зависимости от положения робота
-        double targetOffsetX = robotX - WINDOW_WIDTH / 2.0;
-        double targetOffsetY = robotY - WINDOW_HEIGHT / 2.0;
+        double targetOffsetX = robotX - currentSize.width / 2.0;
+        double targetOffsetY = robotY - currentSize.height / 2.0;
 
         // Ограничиваем движение камеры в пределах карты
-        offsetX = Math.max(0, Math.min(targetOffsetX, MAP_SIZE - WINDOW_WIDTH));
-        offsetY = Math.max(0, Math.min(targetOffsetY, MAP_SIZE - WINDOW_HEIGHT));
+        offsetX = Math.max(0, Math.min(targetOffsetX, MAP_SIZE - currentSize.width));
+        offsetY = Math.max(0, Math.min(targetOffsetY, MAP_SIZE - currentSize.height));
 
         repaint();
     }
 
     @Override
-    public void paint(Graphics g) {
-        super.paint(g);
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g;
 
         // Рисуем фон с учетом смещения
@@ -112,8 +124,10 @@ public class GameVisualizer extends JPanel implements KeyListener {
             g2d.drawImage(backgroundImage, -(int) offsetX, -(int) offsetY, null);
         }
 
-        // Рисуем робота в текущей позиции
-        drawRobot(g2d, (int) (robotX - offsetX), (int) (robotY - offsetY));
+        // Рисуем робота в текущей позиции (относительно камеры)
+        int robotScreenX = (int) (robotX - offsetX);
+        int robotScreenY = (int) (robotY - offsetY);
+        drawRobot(g2d, robotScreenX, robotScreenY);
     }
 
     private void drawRobot(Graphics2D g, int x, int y) {
@@ -125,16 +139,33 @@ public class GameVisualizer extends JPanel implements KeyListener {
 
     @Override
     public void keyPressed(KeyEvent e) {
-        activeKeys.add(e.getKeyCode()); // Добавляем клавишу в активные
+        activeKeys.add(e.getKeyCode());
     }
 
     @Override
     public void keyReleased(KeyEvent e) {
-        activeKeys.remove(e.getKeyCode()); // Убираем клавишу из активных
+        activeKeys.remove(e.getKeyCode());
     }
 
     @Override
     public void keyTyped(KeyEvent e) {
         // Не требуется
+    }
+
+    public int getHeight() {
+        return lastSize.height;
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            JFrame frame = new JFrame("Game Visualizer");
+            GameVisualizer game = new GameVisualizer();
+            frame.add(game);
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            frame.setExtendedState(JFrame.MAXIMIZED_BOTH); // Максимальный размер окна
+            frame.setUndecorated(true); // Убираем рамку окна (опционально)
+            frame.pack();
+            frame.setVisible(true);
+        });
     }
 }
