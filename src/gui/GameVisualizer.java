@@ -155,17 +155,4 @@ public class GameVisualizer extends JPanel implements KeyListener {
     public int getHeight() {
         return lastSize.height;
     }
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            JFrame frame = new JFrame("Game Visualizer");
-            GameVisualizer game = new GameVisualizer();
-            frame.add(game);
-            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setExtendedState(JFrame.MAXIMIZED_BOTH); // Максимальный размер окна
-            frame.setUndecorated(true); // Убираем рамку окна (опционально)
-            frame.pack();
-            frame.setVisible(true);
-        });
-    }
 }
