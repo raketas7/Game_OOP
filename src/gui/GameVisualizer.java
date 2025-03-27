@@ -9,37 +9,42 @@ import java.io.IOException;
 import java.util.*;
 import java.util.Timer;
 
-public class GameVisualizer extends JPanel implements KeyListener {
+public class GameVisualizer extends JPanel implements KeyListener, ComponentListener {
 
-    public static final int MAP_SIZE = 3200;      // Размер карты в пикселях
+    static Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+    public static final int MAP_SIZE = 3200;      // Размер карты
     public static final double SPEED = 5.0;       // Скорость движения
     public static final int ROBOT_SIZE = 30;      // Размер робота
-    public static final int BORDER_PADDING = 5;   // Граница, за которую не должен заходить робот
+    public static final int BORDER_PADDING = 5;   // Граница, за которую робот не должен заходить
+
+    private int windowWidth;  // Текущая ширина окна
+    private int windowHeight; // Текущая высота окна
 
     public double offsetX;   // Смещение камеры
-    private double offsetY;
+    public double offsetY;
+
     public double robotX = MAP_SIZE / 2.0;        // Позиция робота
     public double robotY = MAP_SIZE / 2.0;
 
     public final Set<Integer> activeKeys = new HashSet<>(); // Нажатые клавиши
     private BufferedImage backgroundImage;
-    private Dimension lastSize; // Последний известный размер панели
+
+    public int getWindowWidth() {
+        return windowWidth;
+    }
+
+    public int getWindowHeight() {
+        return windowHeight;
+    }
 
     public GameVisualizer() {
-        // Устанавливаем начальный размер панели
-        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        setPreferredSize(screenSize);
-        lastSize = screenSize;
-
-        // Начальное смещение камеры (центрируем на роботе)
-        offsetX = robotX - screenSize.width / 2.0;
-        offsetY = robotY - screenSize.height / 2.0;
-
+        updateWindowSize();
+        setPreferredSize(new Dimension(windowWidth, windowHeight));
         setFocusable(true);
         requestFocusInWindow();
         addKeyListener(this);
+        addComponentListener(this);
 
-        // Фокусировка при клике
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -49,21 +54,31 @@ public class GameVisualizer extends JPanel implements KeyListener {
 
         setDoubleBuffered(true);
 
-        // Загрузка фонового изображения
         try {
             backgroundImage = ImageIO.read(Objects.requireNonNull(getClass().getResource("/Resource Bundle 'textures'/background.png")));
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        // Таймер для обновления движения
+        updateCameraOffset();
+
         Timer moveTimer = new Timer(true);
         moveTimer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
                 moveRobotAndCamera();
             }
-        }, 0, 20); // Обновление каждые 20 мс
+        }, 0, 20);
+    }
+
+    private void updateWindowSize() {
+        windowWidth = getWidth() > 0 ? getWidth() : screenSize.width;
+        windowHeight = getHeight() > 0 ? getHeight() : screenSize.height;
+    }
+
+    public void updateCameraOffset() {
+        offsetX = Math.max(0, Math.min(robotX - windowWidth / 2.0 + ROBOT_SIZE / 2.0, MAP_SIZE - windowWidth));
+        offsetY = Math.max(0, Math.min(robotY - windowHeight / 2.0 + ROBOT_SIZE / 2.0, MAP_SIZE - windowHeight));
     }
 
     public void moveRobotAndCamera() {
@@ -82,52 +97,35 @@ public class GameVisualizer extends JPanel implements KeyListener {
             dx += SPEED;
         }
 
-        // Нормализация скорости по диагонали
         if (dx != 0 && dy != 0) {
             double normFactor = Math.sqrt(2) / 2;
             dx *= normFactor;
             dy *= normFactor;
         }
 
-        // Двигаем робота
-        robotX += dx;
-        robotY += dy;
+        robotX = Math.max(BORDER_PADDING, Math.min(robotX + dx, MAP_SIZE - ROBOT_SIZE - BORDER_PADDING));
+        robotY = Math.max(BORDER_PADDING, Math.min(robotY + dy, MAP_SIZE - ROBOT_SIZE - BORDER_PADDING));
 
-        // Ограничиваем движение робота в пределах карты с учетом границы
-        robotX = Math.max(BORDER_PADDING, Math.min(robotX, MAP_SIZE - ROBOT_SIZE - BORDER_PADDING));
-        robotY = Math.max(BORDER_PADDING, Math.min(robotY, MAP_SIZE - ROBOT_SIZE - BORDER_PADDING));
-
-        // Обновляем размер панели
-        Dimension currentSize = getSize();
-        if (!currentSize.equals(lastSize)) {
-            lastSize = currentSize;
-        }
-
-        // Двигаем камеру в зависимости от положения робота
-        double targetOffsetX = robotX - currentSize.width / 2.0;
-        double targetOffsetY = robotY - currentSize.height / 2.0;
-
-        // Ограничиваем движение камеры в пределах карты
-        offsetX = Math.max(0, Math.min(targetOffsetX, MAP_SIZE - currentSize.width));
-        offsetY = Math.max(0, Math.min(targetOffsetY, MAP_SIZE - currentSize.height));
-
+        updateCameraOffset();
         repaint();
     }
 
     @Override
-    protected void paintComponent(Graphics g) {
+    public void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g;
 
-        // Рисуем фон с учетом смещения
         if (backgroundImage != null) {
             g2d.drawImage(backgroundImage, -(int) offsetX, -(int) offsetY, null);
+        } else {
+            g2d.setColor(Color.GRAY);
+            g2d.fillRect(0, 0, MAP_SIZE, MAP_SIZE);
         }
 
-        // Рисуем робота в текущей позиции (относительно камеры)
-        int robotScreenX = (int) (robotX - offsetX);
-        int robotScreenY = (int) (robotY - offsetY);
-        drawRobot(g2d, robotScreenX, robotScreenY);
+        g2d.setColor(Color.RED);
+        g2d.drawRect(0, 0, MAP_SIZE, MAP_SIZE);
+
+        drawRobot(g2d, (int) (robotX - offsetX), (int) (robotY - offsetY));
     }
 
     private void drawRobot(Graphics2D g, int x, int y) {
@@ -148,11 +146,21 @@ public class GameVisualizer extends JPanel implements KeyListener {
     }
 
     @Override
-    public void keyTyped(KeyEvent e) {
-        // Не требуется
+    public void keyTyped(KeyEvent e) {}
+
+    @Override
+    public void componentResized(ComponentEvent e) {
+        updateWindowSize();
+        updateCameraOffset();
+        repaint();
     }
 
-    public int getHeight() {
-        return lastSize.height;
-    }
+    @Override
+    public void componentMoved(ComponentEvent e) {}
+
+    @Override
+    public void componentShown(ComponentEvent e) {}
+
+    @Override
+    public void componentHidden(ComponentEvent e) {}
 }

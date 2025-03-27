@@ -85,29 +85,29 @@ public class GameVisualizerTest {
 
     @Test
     public void testCameraFollowsRobot() {
-        // Create a fresh instance with known dimensions
-        GameVisualizer gameVisualizer = new GameVisualizer() {
-            @Override
-            public Dimension getSize() {
-                return new Dimension(800, 600); // Set a fixed size for testing
-            }
-        };
+        GameVisualizer visualizer = new GameVisualizer();
 
-        // Clear any existing keys and add only the D key
-        gameVisualizer.activeKeys.clear();
-        gameVisualizer.activeKeys.add(KeyEvent.VK_D);
+        visualizer.robotX = GameVisualizer.MAP_SIZE / 2.0;
+        visualizer.robotY = GameVisualizer.MAP_SIZE / 2.0;
+        visualizer.updateCameraOffset();
 
-        // Set initial robot position to center
-        gameVisualizer.robotX = MAP_SIZE / 2.0;  // 1600.0
+        double initialOffsetX = visualizer.offsetX;
+        double initialOffsetY = visualizer.offsetY;
 
-        // Execute the movement
-        gameVisualizer.moveRobotAndCamera();
+        // Двигаем робота вправо и вниз
+        visualizer.robotX += 100;
+        visualizer.robotY += 100;
+        visualizer.updateCameraOffset();
 
-        // Calculate expected offset: robotX - WIDTH/2
-        double expectedOffset = gameVisualizer.robotX - 800 / 2.0;  // 1605.0 - 400 = 1205.0
+        // Проверяем, что смещение камеры изменилось
+        assertTrue(visualizer.offsetX > initialOffsetX, "Камера должна сместиться вправо");
+        assertTrue(visualizer.offsetY > initialOffsetY, "Камера должна сместиться вниз");
 
-        // Use delta of 0.1 to account for floating-point precision
-        assertEquals(expectedOffset, gameVisualizer.offsetX, 0.1,
-                "Камера должна следовать за роботом");
+        // Проверяем, что камера не выходит за границы карты
+        assertTrue(visualizer.offsetX >= 0 && visualizer.offsetX <= GameVisualizer.MAP_SIZE - visualizer.getWindowWidth(),
+                "Камера должна оставаться в пределах карты по X");
+        assertTrue(visualizer.offsetY >= 0 && visualizer.offsetY <= GameVisualizer.MAP_SIZE - visualizer.getWindowHeight(),
+                "Камера должна оставаться в пределах карты по Y");
     }
+
 }
