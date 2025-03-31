@@ -1,5 +1,8 @@
 package gui;
 
+import log.LogWindowSource;
+import log.Logger;
+
 import java.awt.Frame;
 import java.util.Locale;
 import java.util.ResourceBundle;
@@ -20,10 +23,11 @@ public class RobotsProgram {
 
     // Загрузка ресурсов
     ResourceBundle bundle = ResourceBundle.getBundle("messages", Locale.getDefault());
+    LogWindowSource logSource = Logger.getDefaultLogSource();
 
     // Запуск приложения
     SwingUtilities.invokeLater(() -> {
-      MainApplicationFrame frame = new MainApplicationFrame(bundle); // Передаем ResourceBundle
+      MainApplicationFrame frame = new MainApplicationFrame(bundle, logSource); // Передаем ResourceBundle
       frame.pack();
       frame.setVisible(true);
       frame.setExtendedState(Frame.MAXIMIZED_BOTH);

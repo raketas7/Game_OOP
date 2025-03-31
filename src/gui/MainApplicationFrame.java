@@ -3,42 +3,39 @@ package gui;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
 import java.util.Locale;
 import java.util.ResourceBundle;
-import javax.swing.JDesktopPane;
-import javax.swing.JFrame;
-import javax.swing.JInternalFrame;
+import javax.swing.*;
 import log.Logger;
+import log.LogWindowSource;
 
 public class MainApplicationFrame extends JFrame {
     private final JDesktopPane desktopPane = new JDesktopPane();
     private ResourceBundle bundle;
     private final WindowCloseHandler windowCloseHandler;
+    private final LogWindowSource logSource;
 
-    public MainApplicationFrame(ResourceBundle bundle) {
+    private LogWindow logWindow;
+    private GameWindow gameWindow;
+
+    public MainApplicationFrame(ResourceBundle bundle, LogWindowSource logSource) {
         this.bundle = bundle;
+        this.logSource = logSource;
         this.windowCloseHandler = new WindowCloseHandler(bundle);
         initializeUI();
     }
 
     private void initializeUI() {
-        for (WindowListener listener : getWindowListeners()) {
-            removeWindowListener(listener);
-        }
-
-        int inset = 50;
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        setBounds(inset, inset,
-                screenSize.width - inset * 2,
-                screenSize.height - inset * 2);
-
+        setBounds(50, 50, screenSize.width - 100, screenSize.height - 100);
         setContentPane(desktopPane);
 
-        LogWindow logWindow = createLogWindow();
+        // Создаем окно логов (единственное)
+        logWindow = createLogWindow();
         addWindow(logWindow);
 
-        GameWindow gameWindow = new GameWindow(bundle);
+        // Создаем игровое окно (единственное)
+        gameWindow = new GameWindow(bundle);
         gameWindow.setSize(1536, 770);
         addWindow(gameWindow);
 
@@ -46,7 +43,6 @@ public class MainApplicationFrame extends JFrame {
         setJMenuBar(menuBar.getMenuBar());
 
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
-
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
@@ -55,23 +51,53 @@ public class MainApplicationFrame extends JFrame {
         });
     }
 
-    // создает и настраивает окно логов
     protected LogWindow createLogWindow() {
-        LogWindow logWindow = new LogWindow(Logger.getDefaultLogSource(), bundle);
-        logWindow.setLocation(10, 10);
-        logWindow.setSize(300, 800);
-        setMinimumSize(logWindow.getSize());
-        logWindow.pack();
+        LogWindow window = new LogWindow(logSource, bundle);
+        window.setLocation(10, 10);
+        window.setSize(300, 800);
+        setMinimumSize(window.getSize());
+        window.pack();
         Logger.debug(bundle.getString("logMessage"));
-        return logWindow;
+        return window;
     }
 
-    protected void addWindow(JInternalFrame frame) {
+    public void addWindow(JInternalFrame frame) {
+        // Проверяем, не пытаемся ли мы добавить дубликат окна
+        if (frame instanceof LogWindow) {
+            if (logWindow != null && logWindow.isVisible()) {
+                logWindow.toFront();
+                return;
+            }
+            logWindow = (LogWindow) frame;
+        }
+        else if (frame instanceof GameWindow) {
+            if (gameWindow != null && gameWindow.isVisible()) {
+                gameWindow.toFront();
+                return;
+            }
+            gameWindow = (GameWindow) frame;
+        }
+
         desktopPane.add(frame);
         frame.setVisible(true);
     }
 
-    // обновление локали с сохранением размера окна
+    // Методы для открытия окон с проверкой дубликатов
+    public void showLogWindow() {
+        if (logWindow == null || logWindow.isClosed()) {
+            logWindow = createLogWindow();
+        }
+        addWindow(logWindow);
+    }
+
+    public void showGameWindow() {
+        if (gameWindow == null || gameWindow.isClosed()) {
+            gameWindow = new GameWindow(bundle);
+            gameWindow.setSize(1536, 770);
+        }
+        addWindow(gameWindow);
+    }
+
     public void updateLocale(Locale locale) {
         Rectangle bounds = getBounds();
         this.bundle = ResourceBundle.getBundle("messages", locale);
@@ -80,7 +106,6 @@ public class MainApplicationFrame extends JFrame {
         setBounds(bounds);
     }
 
-    // Пересоздание интерфейса
     private void recreateUI() {
         getContentPane().removeAll();
         initializeUI();
