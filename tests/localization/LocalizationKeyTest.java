@@ -40,6 +40,9 @@ public class LocalizationKeyTest {
         expectedKeys.add("exitMenuDescription");
         expectedKeys.add("exitMenuItem");
         expectedKeys.add("languageMenu");
+        expectedKeys.add("windowsMenu");
+        expectedKeys.add("gameWindowItem");
+        expectedKeys.add("logWindowItem");
         expectedKeys.add("confirmCloseWindow");
         expectedKeys.add("confirmCloseTitle");
         expectedKeys.add("logWindowTitle");
@@ -47,6 +50,8 @@ public class LocalizationKeyTest {
         expectedKeys.add("logMessage");
         expectedKeys.add("yesButtonText");
         expectedKeys.add("noButtonText");
+        expectedKeys.add("waves");
+        expectedKeys.add("enemies");
 
         return expectedKeys;
     }

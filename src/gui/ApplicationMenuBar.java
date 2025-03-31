@@ -22,6 +22,7 @@ public class ApplicationMenuBar {
         menuBar.add(createLookAndFeelMenu()); // меню режима отображения
         menuBar.add(createTestMenu()); // тестовое меню
         menuBar.add(createLanguageMenu()); // меню языка
+        menuBar.add(createWindowsMenu()); // меню окон
         menuBar.add(createExitMenu()); // меню выйти
     }
 
@@ -29,7 +30,22 @@ public class ApplicationMenuBar {
         return menuBar;
     }
 
-    // меню режима отображения
+    private JMenu createWindowsMenu() {
+        JMenu windowsMenu = new JMenu(bundle.getString("windowsMenu"));
+        windowsMenu.setMnemonic(KeyEvent.VK_W);
+
+        JMenuItem gameWindowItem = new JMenuItem(bundle.getString("gameWindowItem"), KeyEvent.VK_G);
+        gameWindowItem.addActionListener((event) -> mainFrame.showGameWindow());
+
+        JMenuItem logWindowItem = new JMenuItem(bundle.getString("logWindowItem"), KeyEvent.VK_L);
+        logWindowItem.addActionListener((event) -> mainFrame.showLogWindow());
+
+        windowsMenu.add(gameWindowItem);
+        windowsMenu.add(logWindowItem);
+
+        return windowsMenu;
+    }
+
     private JMenu createLookAndFeelMenu() {
         JMenu lookAndFeelMenu = new JMenu(bundle.getString("lookAndFeelMenu"));
         lookAndFeelMenu.setMnemonic(KeyEvent.VK_V);
@@ -42,21 +58,18 @@ public class ApplicationMenuBar {
         return lookAndFeelMenu;
     }
 
-    // подраздел (системная схема)
     private JMenuItem createSystemLookAndFeelMenuItem() {
         JMenuItem systemLookAndFeel = new JMenuItem(bundle.getString("systemLookAndFeel"), KeyEvent.VK_S);
         systemLookAndFeel.addActionListener((event) -> setLookAndFeel(UIManager.getSystemLookAndFeelClassName()));
         return systemLookAndFeel;
     }
 
-    // подраздел (универсальная схема)
     private JMenuItem createCrossPlatformLookAndFeelMenuItem() {
         JMenuItem crossplatformLookAndFeel = new JMenuItem(bundle.getString("crossPlatformLookAndFeel"), KeyEvent.VK_U);
         crossplatformLookAndFeel.addActionListener((event) -> setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName()));
         return crossplatformLookAndFeel;
     }
 
-    // тестовое меню
     private JMenu createTestMenu() {
         JMenu testMenu = new JMenu(bundle.getString("testMenu"));
         testMenu.setMnemonic(KeyEvent.VK_T);
@@ -68,14 +81,12 @@ public class ApplicationMenuBar {
         return testMenu;
     }
 
-    // подраздел (добавление сообщения в лог)
     private JMenuItem createAddLogMessageItem() {
         JMenuItem addLogMessageItem = new JMenuItem(bundle.getString("addLogMessageItem"), KeyEvent.VK_S);
         addLogMessageItem.addActionListener((event) -> Logger.debug("Новая строка"));
         return addLogMessageItem;
     }
 
-    // меню языка
     private JMenu createLanguageMenu() {
         JMenu languageMenu = new JMenu(bundle.getString("languageMenu"));
         languageMenu.setMnemonic(KeyEvent.VK_L);
@@ -92,12 +103,10 @@ public class ApplicationMenuBar {
         return languageMenu;
     }
 
-    // метод для изменения языка
     private void changeLanguage(Locale locale) {
-        mainFrame.updateLocale(locale); // Обновляем локаль в главном окне
+        mainFrame.updateLocale(locale);
     }
 
-    // меню выйти
     private JMenu createExitMenu() {
         JMenu exitMenu = new JMenu(bundle.getString("exitMenu"));
         exitMenu.setMnemonic(KeyEvent.VK_Q);
@@ -111,14 +120,12 @@ public class ApplicationMenuBar {
         return exitMenu;
     }
 
-    // подтверждение выхода
     private void confirmAndExit() {
         if (windowCloseHandler.confirmExit(this.getMenuBar())) {
             System.exit(0);
         }
     }
 
-    // динамическое изменение внешнего вида
     private void setLookAndFeel(String className) {
         try {
             UIManager.setLookAndFeel(className);

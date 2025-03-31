@@ -1,5 +1,7 @@
 package gui;
 
+import gui.Enemies.Enemy;
+
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
@@ -7,39 +9,45 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.*;
+import java.util.List;
 import java.util.Timer;
 
 public class GameVisualizer extends JPanel implements KeyListener, ComponentListener {
+    public static final int MAP_SIZE = 3200;
+    public static final int BORDER_PADDING = 5;
+    public static final int ENEMY_SPAWN_RADIUS = 400;
 
-    static Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-    public static final int MAP_SIZE = 3200;      // Размер карты
-    public static final double SPEED = 5.0;       // Скорость движения
-    public static final int ROBOT_SIZE = 30;      // Размер робота
-    public static final int BORDER_PADDING = 5;   // Граница, за которую робот не должен заходить
-
-    private int windowWidth;  // Текущая ширина окна
-    private int windowHeight; // Текущая высота окна
-
-    public double offsetX;   // Смещение камеры
-    public double offsetY;
-
-    public double robotX = MAP_SIZE / 2.0;        // Позиция робота
-    public double robotY = MAP_SIZE / 2.0;
-
-    public final Set<Integer> activeKeys = new HashSet<>(); // Нажатые клавиши
+    private final ResourceBundle bundle;
+    private int windowWidth;
+    private int windowHeight;
+    private double cameraOffsetX;
+    private double cameraOffsetY;
+    private final Player player;
+    private final Set<Integer> activeKeys = new HashSet<>();
     private BufferedImage backgroundImage;
+    private final List<Enemy> enemies = Collections.synchronizedList(new ArrayList<>());
+    private final WaveManager waveManager;
 
-    public int getWindowWidth() {
-        return windowWidth;
+    public GameVisualizer(ResourceBundle bundle) {
+        this.bundle = bundle;
+        player = new Player(MAP_SIZE / 2.0, MAP_SIZE / 2.0);
+        waveManager = new WaveManager();
+        initUI();
+        loadResources();
+        setupTimers();
     }
 
-    public int getWindowHeight() {
-        return windowHeight;
-    }
+    public Set<Integer> getActiveKeys() { return activeKeys; }
+    public int getWindowWidth() { return windowWidth; }
+    public int getWindowHeight() { return windowHeight; }
+    public double getCameraOffsetX() { return cameraOffsetX; }
+    public double getCameraOffsetY() { return cameraOffsetY; }
+    public List<Enemy> getEnemies() { return enemies; }
+    public Player getPlayer() { return player; }
+    public WaveManager getWaveManager() { return waveManager; }
 
-    public GameVisualizer() {
+    private void initUI() {
         updateWindowSize();
-        setPreferredSize(new Dimension(windowWidth, windowHeight));
         setFocusable(true);
         requestFocusInWindow();
         addKeyListener(this);
@@ -53,86 +61,122 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
         });
 
         setDoubleBuffered(true);
+    }
 
+    private void loadResources() {
         try {
-            backgroundImage = ImageIO.read(Objects.requireNonNull(getClass().getResource("/Resource Bundle 'textures'/background.png")));
+            backgroundImage = ImageIO.read(Objects.requireNonNull(
+                    getClass().getResource("/Resource Bundle 'textures'/background.png")));
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
 
-        updateCameraOffset();
-
-        Timer moveTimer = new Timer(true);
-        moveTimer.scheduleAtFixedRate(new TimerTask() {
+    private void setupTimers() {
+        new Timer(true).scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                moveRobotAndCamera();
+                movePlayer();
+                updateCamera();
+                moveEnemies();
+                checkCollisions();
+                repaint();
+                checkWaveSpawning();
             }
         }, 0, 20);
     }
 
-    private void updateWindowSize() {
-        windowWidth = getWidth() > 0 ? getWidth() : screenSize.width;
-        windowHeight = getHeight() > 0 ? getHeight() : screenSize.height;
+    protected void updateWindowSize() {
+        windowWidth = getWidth() > 0 ? getWidth() : Toolkit.getDefaultToolkit().getScreenSize().width;
+        windowHeight = getHeight() > 0 ? getHeight() : Toolkit.getDefaultToolkit().getScreenSize().height;
     }
 
-    public void updateCameraOffset() {
-        offsetX = Math.max(0, Math.min(robotX - windowWidth / 2.0 + ROBOT_SIZE / 2.0, MAP_SIZE - windowWidth));
-        offsetY = Math.max(0, Math.min(robotY - windowHeight / 2.0 + ROBOT_SIZE / 2.0, MAP_SIZE - windowHeight));
-    }
-
-    public void moveRobotAndCamera() {
+    protected void movePlayer() {
         double dx = 0, dy = 0;
 
-        if (activeKeys.contains(KeyEvent.VK_W) || activeKeys.contains(KeyEvent.VK_UP)) {
-            dy -= SPEED;
-        }
-        if (activeKeys.contains(KeyEvent.VK_S) || activeKeys.contains(KeyEvent.VK_DOWN)) {
-            dy += SPEED;
-        }
-        if (activeKeys.contains(KeyEvent.VK_A) || activeKeys.contains(KeyEvent.VK_LEFT)) {
-            dx -= SPEED;
-        }
-        if (activeKeys.contains(KeyEvent.VK_D) || activeKeys.contains(KeyEvent.VK_RIGHT)) {
-            dx += SPEED;
-        }
+        if (activeKeys.contains(KeyEvent.VK_W)) dy -= Player.calculateNormalizedSpeed(0, dy);
+        if (activeKeys.contains(KeyEvent.VK_S)) dy += Player.calculateNormalizedSpeed(0, dy);
+        if (activeKeys.contains(KeyEvent.VK_A)) dx -= Player.calculateNormalizedSpeed(dx, 0);
+        if (activeKeys.contains(KeyEvent.VK_D)) dx += Player.calculateNormalizedSpeed(dx, 0);
 
-        if (dx != 0 && dy != 0) {
-            double normFactor = Math.sqrt(2) / 2;
-            dx *= normFactor;
-            dy *= normFactor;
+        player.move(dx, dy, MAP_SIZE);
+    }
+
+    protected void updateCamera() {
+        double targetX = player.getX() - windowWidth / 2.0 + Player.SIZE / 2.0;
+        double targetY = player.getY() - windowHeight / 2.0 + Player.SIZE / 2.0;
+
+        cameraOffsetX = Math.max(0, Math.min(targetX, MAP_SIZE - windowWidth));
+        cameraOffsetY = Math.max(0, Math.min(targetY, MAP_SIZE - windowHeight));
+    }
+
+    private void checkWaveSpawning() {
+        if (waveManager.shouldSpawnWave()) {
+            waveManager.startNextWave();
+            synchronized(enemies) {
+                enemies.addAll(waveManager.spawnEnemies(
+                        player.getX(), player.getY(), MAP_SIZE, enemies
+                ));
+            }
         }
+    }
 
-        robotX = Math.max(BORDER_PADDING, Math.min(robotX + dx, MAP_SIZE - ROBOT_SIZE - BORDER_PADDING));
-        robotY = Math.max(BORDER_PADDING, Math.min(robotY + dy, MAP_SIZE - ROBOT_SIZE - BORDER_PADDING));
+    private void moveEnemies() {
+        synchronized(enemies) {
+            for (Enemy enemy : enemies) {
+                enemy.move(player.getX(), player.getY(), enemies);
+            }
+        }
+    }
 
-        updateCameraOffset();
-        repaint();
+    protected void checkCollisions() {
+        synchronized(enemies) {
+            Iterator<Enemy> iterator = enemies.iterator();
+            while (iterator.hasNext()) {
+                Enemy enemy = iterator.next();
+                Rectangle enemyBounds = enemy.getBounds(cameraOffsetX, cameraOffsetY);
+                Rectangle playerBounds = player.getBounds(cameraOffsetX, cameraOffsetY);
+
+                if (enemyBounds.intersects(playerBounds)) {
+                    iterator.remove();
+                    waveManager.enemyDied();
+                }
+            }
+        }
     }
 
     @Override
-    public void paintComponent(Graphics g) {
+    protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g;
 
+        // Рисуем карту
         if (backgroundImage != null) {
-            g2d.drawImage(backgroundImage, -(int) offsetX, -(int) offsetY, null);
+            g2d.drawImage(backgroundImage, -(int)cameraOffsetX, -(int)cameraOffsetY, null);
         } else {
             g2d.setColor(Color.GRAY);
-            g2d.fillRect(0, 0, MAP_SIZE, MAP_SIZE);
+            g2d.fillRect(-(int)cameraOffsetX, -(int)cameraOffsetY, MAP_SIZE, MAP_SIZE);
         }
 
+        // Рисуем границы карты
         g2d.setColor(Color.RED);
-        g2d.drawRect(0, 0, MAP_SIZE, MAP_SIZE);
+        g2d.drawRect(-(int)cameraOffsetX, -(int)cameraOffsetY, MAP_SIZE, MAP_SIZE);
 
-        drawRobot(g2d, (int) (robotX - offsetX), (int) (robotY - offsetY));
-    }
+        // Рисуем врагов
+        synchronized(enemies) {
+            for (Enemy enemy : enemies) {
+                enemy.draw(g2d, cameraOffsetX, cameraOffsetY);
+            }
+        }
 
-    private void drawRobot(Graphics2D g, int x, int y) {
-        g.setColor(Color.RED);
-        g.fillOval(x, y, ROBOT_SIZE, ROBOT_SIZE);
-        g.setColor(Color.BLACK);
-        g.drawOval(x, y, ROBOT_SIZE, ROBOT_SIZE);
+        // Рисуем игрока
+        player.draw(g2d, cameraOffsetX, cameraOffsetY);
+
+        // Отображаем информацию о волне
+        g2d.setColor(Color.WHITE);
+        g2d.setFont(new Font("Arial", Font.BOLD, 20));
+        g2d.drawString(bundle.getString("waves") + waveManager.getCurrentWave(), 20, 30);
+        g2d.drawString(bundle.getString("enemies") + waveManager.getEnemiesAlive(), 20, 60);
     }
 
     @Override
@@ -151,7 +195,7 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
     @Override
     public void componentResized(ComponentEvent e) {
         updateWindowSize();
-        updateCameraOffset();
+        updateCamera();
         repaint();
     }
 
