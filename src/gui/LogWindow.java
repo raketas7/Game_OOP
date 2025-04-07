@@ -10,13 +10,13 @@ import log.LogChangeListener;
 import log.LogEntry;
 import log.LogWindowSource;
 
-public class LogWindow extends JInternalFrame implements LogChangeListener {
+public class LogWindow extends JInternalFrame implements LogChangeListener, TranslatableWindow {
     private final LogWindowSource m_logSource;
     private final TextArea m_logContent;
     private final WindowCloseHandler closeHandler;
 
     public LogWindow(LogWindowSource logSource, ResourceBundle bundle) {
-        super(bundle.getString("logWindowTitle"), true, true, true, true);
+        super("", true, true, true, true);
         m_logSource = logSource;
         m_logSource.registerListener(this);
         m_logContent = new TextArea("");
@@ -32,6 +32,8 @@ public class LogWindow extends JInternalFrame implements LogChangeListener {
 
         closeHandler = new WindowCloseHandler(bundle);
         addInternalFrameListener(closeHandler);
+
+        setTranslatedTitle(bundle);
     }
 
     private void updateLogContent() {
@@ -53,5 +55,10 @@ public class LogWindow extends JInternalFrame implements LogChangeListener {
         m_logSource.unregisterListener(this);
         removeInternalFrameListener(closeHandler);
         super.dispose();
+    }
+
+    @Override
+    public void setTranslatedTitle(ResourceBundle bundle) {
+        setTitle(bundle.getString("logWindowTitle"));
     }
 }
