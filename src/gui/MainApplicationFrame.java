@@ -30,13 +30,13 @@ public class MainApplicationFrame extends JFrame {
         setBounds(50, 50, screenSize.width - 100, screenSize.height - 100);
         setContentPane(desktopPane);
 
-        // Создаем окно логов (единственное)
+        // Создаем окно логов
         logWindow = createLogWindow();
         addWindow(logWindow);
 
-        // Создаем игровое окно (единственное)
+        // Создаем игровое окно
         gameWindow = new GameWindow(bundle);
-        gameWindow.setSize(1536, 770);
+        gameWindow.setSize(getWidth(), getHeight());
         addWindow(gameWindow);
 
         ApplicationMenuBar menuBar = new ApplicationMenuBar(bundle, this);
@@ -93,7 +93,7 @@ public class MainApplicationFrame extends JFrame {
     public void showGameWindow() {
         if (gameWindow == null || gameWindow.isClosed()) {
             gameWindow = new GameWindow(bundle);
-            gameWindow.setSize(1536, 770);
+            gameWindow.setSize(800, 400);
         }
         addWindow(gameWindow);
     }
