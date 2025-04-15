@@ -2,35 +2,34 @@ package gui;
 
 import java.awt.BorderLayout;
 import java.util.ResourceBundle;
-import javax.swing.*;
+import javax.swing.JPanel;
 
-public class GameWindow extends JInternalFrame implements TranslatableWindow {
+public class GameWindow extends BasicWindow {
+    private final GameVisualizer visualizer;
 
     public GameWindow(ResourceBundle bundle) {
-        super("", true, true, true, true);
-        GameVisualizer m_visualizer = new GameVisualizer(bundle);
+        super(true, true, true, true);
+        this.visualizer = new GameVisualizer(bundle);
+        initializeUI(bundle);
+    }
+
+    @Override
+    protected String getTitleKey() {
+        return "gameWindowItem";
+    }
+
+    private void initializeUI(ResourceBundle bundle) {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.add(m_visualizer, BorderLayout.CENTER);
+        panel.add(visualizer, BorderLayout.CENTER);
         getContentPane().add(panel);
 
-        // Set the window to maximum size
-        setMaximizable(true);
         try {
-            setMaximum(true);
+            setMaximum(true); // Развернуть на весь экран
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        setDefaultCloseOperation(JInternalFrame.DO_NOTHING_ON_CLOSE);
-
-        WindowCloseHandler closeHandler = new WindowCloseHandler(bundle);
-        addInternalFrameListener(closeHandler);
-
+        setupDefaultCloseOperation(bundle);
         setTranslatedTitle(bundle);
-    }
-
-    @Override
-    public void setTranslatedTitle(ResourceBundle bundle) {
-        setTitle(bundle.getString("gameWindowTitle"));
     }
 }
