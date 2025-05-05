@@ -22,13 +22,6 @@ public class GameWindow extends BasicWindow {
         JPanel panel = new JPanel(new BorderLayout());
         panel.add(visualizer, BorderLayout.CENTER);
         getContentPane().add(panel);
-
-        try {
-            setMaximum(true); // Развернуть на весь экран
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
         setupDefaultCloseOperation(bundle);
         setTranslatedTitle(bundle);
     }

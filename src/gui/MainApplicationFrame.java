@@ -4,6 +4,7 @@ import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.Locale;
+import java.util.Map;
 import java.util.ResourceBundle;
 import javax.swing.*;
 import log.Logger;
@@ -15,14 +16,15 @@ public class MainApplicationFrame extends JFrame {
     private final WindowCloseHandler windowCloseHandler;
     private final LogWindowSource logSource;
 
-    private LogWindow logWindow;
-    private GameWindow gameWindow;
+    public LogWindow logWindow;
+    public GameWindow gameWindow;
 
     public MainApplicationFrame(ResourceBundle bundle, LogWindowSource logSource) {
         this.bundle = bundle;
         this.logSource = logSource;
         this.windowCloseHandler = new WindowCloseHandler(bundle);
         initializeUI();
+        loadWindowStates();
     }
 
     private void initializeUI() {
@@ -30,13 +32,12 @@ public class MainApplicationFrame extends JFrame {
         setBounds(50, 50, screenSize.width - 100, screenSize.height - 100);
         setContentPane(desktopPane);
 
-        // Создаем окно логов (единственное)
+        // Создаем окно логов
         logWindow = createLogWindow();
         addWindow(logWindow);
 
-        // Создаем игровое окно (единственное)
+        // Создаем игровое окно без принудительного размера
         gameWindow = new GameWindow(bundle);
-        gameWindow.setSize(getWidth(), getHeight());
         addWindow(gameWindow);
 
         ApplicationMenuBar menuBar = new ApplicationMenuBar(bundle, this);
@@ -51,27 +52,46 @@ public class MainApplicationFrame extends JFrame {
         });
     }
 
+    private void loadWindowStates() {
+        Map<String, Map<String, Object>> states = WindowStateManager.loadWindowStates();
+
+        // Применяем состояние для logWindow
+        Map<String, Object> logState = states.get("logWindow");
+        if (logState != null) {
+            WindowStateManager.applyWindowState(logWindow, logState);
+        } else {
+            logWindow.setLocation(10, 10);
+            logWindow.setSize(300, 800);
+        }
+
+        // Применяем состояние для gameWindow
+        Map<String, Object> gameState = states.get("gameWindow");
+        if (gameState != null) {
+            WindowStateManager.applyWindowState(gameWindow, gameState);
+        } else {
+            // Устанавливаем размер по умолчанию, только если состояния нет
+            gameWindow.setSize(getWidth() - 300, getHeight() - 100);
+            gameWindow.setLocation(320, 10);
+        }
+    }
+
     protected LogWindow createLogWindow() {
         LogWindow window = new LogWindow(logSource, bundle);
-        window.setLocation(10, 10);
-        window.setSize(300, 800);
-        setMinimumSize(window.getSize());
         window.pack();
         Logger.debug(bundle.getString("logMessage"));
         return window;
     }
 
     public void addWindow(JInternalFrame frame) {
-        // Проверяем, не пытаемся ли мы добавить дубликат окна
         if (frame instanceof LogWindow) {
-            if (logWindow != null && logWindow.isVisible()) {
+            if (logWindow != null && logWindow.isVisible() && !logWindow.isClosed()) {
                 logWindow.toFront();
                 return;
             }
             logWindow = (LogWindow) frame;
         }
         else if (frame instanceof GameWindow) {
-            if (gameWindow != null && gameWindow.isVisible()) {
+            if (gameWindow != null && gameWindow.isVisible() && !gameWindow.isClosed()) {
                 gameWindow.toFront();
                 return;
             }
@@ -82,7 +102,6 @@ public class MainApplicationFrame extends JFrame {
         frame.setVisible(true);
     }
 
-    // Методы для открытия окон с проверкой дубликатов
     public void showLogWindow() {
         if (logWindow == null || logWindow.isClosed()) {
             logWindow = createLogWindow();
@@ -93,7 +112,6 @@ public class MainApplicationFrame extends JFrame {
     public void showGameWindow() {
         if (gameWindow == null || gameWindow.isClosed()) {
             gameWindow = new GameWindow(bundle);
-            gameWindow.setSize(getWidth(), getHeight());
         }
         addWindow(gameWindow);
     }
@@ -115,6 +133,7 @@ public class MainApplicationFrame extends JFrame {
 
     private void confirmAndClose() {
         if (windowCloseHandler.confirmExit(this)) {
+            WindowStateManager.saveWindowStates(this);
             System.exit(0);
         }
     }
