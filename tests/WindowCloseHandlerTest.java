@@ -1,4 +1,4 @@
-import gui.WindowCloseHandler;
+import gui.windows.WindowCloseHandler;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.MockedStatic;

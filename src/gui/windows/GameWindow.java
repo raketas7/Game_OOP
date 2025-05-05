@@ -1,4 +1,6 @@
-package gui;
+package gui.windows;
+
+import gui.GameVisualizer;
 
 import java.awt.BorderLayout;
 import java.util.ResourceBundle;
@@ -22,7 +24,7 @@ public class GameWindow extends BasicWindow {
         JPanel panel = new JPanel(new BorderLayout());
         panel.add(visualizer, BorderLayout.CENTER);
         getContentPane().add(panel);
-        setupDefaultCloseOperation(bundle);
+        setupDefaultCloseOperation();
         setTranslatedTitle(bundle);
     }
 }
