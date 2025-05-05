@@ -1,4 +1,4 @@
-package gui;
+package gui.windows;
 
 import javax.swing.*;
 import javax.swing.event.InternalFrameEvent;

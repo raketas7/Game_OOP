@@ -1,4 +1,4 @@
-package gui;
+package gui.windows;
 
 import java.awt.BorderLayout;
 import java.awt.EventQueue;
@@ -36,7 +36,7 @@ public class LogWindow extends BasicWindow implements LogChangeListener {
         pack();
         updateLogContent();
 
-        setupDefaultCloseOperation(bundle);
+        setupDefaultCloseOperation();
         setTranslatedTitle(bundle);
     }
 

@@ -1,29 +1,29 @@
 package gui;
 
 import javax.swing.*;
+import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.util.Locale;
 import java.util.ResourceBundle;
+import java.beans.PropertyVetoException;
 
+import gui.profiling.ProfileManager;
 import log.Logger;
 
 public class ApplicationMenuBar {
-
     private final JMenuBar menuBar;
     private final ResourceBundle bundle;
     private final MainApplicationFrame mainFrame;
-    private final WindowCloseHandler windowCloseHandler;
 
     public ApplicationMenuBar(ResourceBundle bundle, MainApplicationFrame mainFrame) {
         this.bundle = bundle;
         this.mainFrame = mainFrame;
-        this.windowCloseHandler = new WindowCloseHandler(bundle);
         menuBar = new JMenuBar();
-        menuBar.add(createLookAndFeelMenu()); // меню режима отображения
-        menuBar.add(createTestMenu()); // тестовое меню
-        menuBar.add(createLanguageMenu()); // меню языка
-        menuBar.add(createWindowsMenu()); // меню окон
-        menuBar.add(createExitMenu()); // меню выйти
+        menuBar.add(createLookAndFeelMenu());
+        menuBar.add(createTestMenu());
+        menuBar.add(createLanguageMenu());
+        menuBar.add(createWindowsMenu());
+        menuBar.add(createExitMenu());
     }
 
     public JMenuBar getMenuBar() {
@@ -83,7 +83,7 @@ public class ApplicationMenuBar {
 
     private JMenuItem createAddLogMessageItem() {
         JMenuItem addLogMessageItem = new JMenuItem(bundle.getString("addLogMessageItem"), KeyEvent.VK_S);
-        addLogMessageItem.addActionListener((event) -> Logger.debug("Новая строка"));
+        addLogMessageItem.addActionListener((event) -> Logger.debug("New log message"));
         return addLogMessageItem;
     }
 
@@ -105,6 +105,7 @@ public class ApplicationMenuBar {
 
     private void changeLanguage(Locale locale) {
         mainFrame.updateLocale(locale);
+        SwingUtilities.updateComponentTreeUI(mainFrame);
     }
 
     private JMenu createExitMenu() {
@@ -121,7 +122,29 @@ public class ApplicationMenuBar {
     }
 
     private void confirmAndExit() {
-        if (windowCloseHandler.confirmExit(this.getMenuBar())) {
+        Object[] options = {
+                bundle.getString("yesButtonText"),
+                bundle.getString("noButtonText")
+        };
+
+        int option = JOptionPane.showOptionDialog(
+                mainFrame,
+                bundle.getString("saveBeforeExit"),
+                bundle.getString("exitConfirmation"),
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                options,
+                options[1]
+        );
+
+        if (option == JOptionPane.YES_OPTION) {
+            boolean saved = mainFrame.saveProfileWithValidation();
+            if (saved) {
+                System.exit(0);
+            }
+            // Если сохранение не удалось, остаемся в приложении
+        } else {
             System.exit(0);
         }
     }
@@ -129,10 +152,10 @@ public class ApplicationMenuBar {
     private void setLookAndFeel(String className) {
         try {
             UIManager.setLookAndFeel(className);
-            SwingUtilities.updateComponentTreeUI(menuBar.getTopLevelAncestor());
+            SwingUtilities.updateComponentTreeUI(mainFrame);
         } catch (ClassNotFoundException | InstantiationException
                  | IllegalAccessException | UnsupportedLookAndFeelException e) {
-            // Игнорируем ошибки
+            Logger.error("Error setting look and feel: " + e.getMessage());
         }
     }
 }
