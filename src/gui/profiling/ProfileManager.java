@@ -1,5 +1,7 @@
 package gui.profiling;
 
+import gui.MainApplicationFrame;
+import log.Logger;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -43,7 +45,6 @@ public class ProfileManager {
 
         try (FileReader reader = new FileReader(filePath)) {
             Map<String, Object> result = (Map<String, Object>) parser.parse(reader);
-            // Преобразуем все Long значения в Integer для координат и размеров
             for (Object value : result.values()) {
                 if (value instanceof JSONObject) {
                     JSONObject windowState = (JSONObject) value;
@@ -96,7 +97,7 @@ public class ProfileManager {
                 JOptionPane.QUESTION_MESSAGE,
                 null,
                 options,
-                options[1] // default to "No"
+                options[1]
         );
 
         return option == JOptionPane.YES_OPTION;
@@ -143,5 +144,126 @@ public class ProfileManager {
         return name != null && !name.trim().isEmpty() &&
                 !name.contains(File.separator) && !name.contains(".") &&
                 name.matches("[a-zA-Z0-9_\\- ]+");
+    }
+
+    public static void checkAndLoadProfile(MainApplicationFrame frame, ResourceBundle bundle) {
+        if (hasSavedProfiles()) {
+            Object[] options = {
+                    bundle.getString("yesButtonText"),
+                    bundle.getString("noButtonText")
+            };
+
+            int option = JOptionPane.showOptionDialog(
+                    frame,
+                    bundle.getString("loadProfileQuestion"),
+                    bundle.getString("loadProfile"),
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.QUESTION_MESSAGE,
+                    null,
+                    options,
+                    options[1]
+            );
+
+            if (option == JOptionPane.YES_OPTION) {
+                loadSelectedProfile(frame, bundle);
+            }
+        }
+    }
+
+    public static void loadSelectedProfile(MainApplicationFrame frame, ResourceBundle bundle) {
+        String profileName = showLoadDialog(frame, bundle);
+
+        if (profileName != null && !profileName.isEmpty()) {
+            try {
+                Map<String, Object> states = loadProfile(profileName);
+                frame.applyProfileState(states);
+                frame.revalidate();
+                frame.repaint();
+            } catch (Exception e) {
+                handleProfileLoadError(frame, bundle, e);
+            }
+        }
+    }
+
+    public static boolean saveProfileWithValidation(MainApplicationFrame frame, ResourceBundle bundle) {
+        String profileName;
+        do {
+            profileName = JOptionPane.showInputDialog(
+                    frame,
+                    bundle.getString("enterProfileName"),
+                    bundle.getString("saveProfileTitle"),
+                    JOptionPane.QUESTION_MESSAGE
+            );
+
+            if (profileName == null) {
+                return false; // Пользователь отменил ввод
+            }
+
+            if (!isValidProfileName(profileName)) {
+                JOptionPane.showMessageDialog(
+                        frame,
+                        bundle.getString("invalidName"),
+                        bundle.getString("errorTitle"),
+                        JOptionPane.ERROR_MESSAGE
+                );
+                continue;
+            }
+
+            try {
+                frame.saveCurrentState(profileName);
+                JOptionPane.showMessageDialog(
+                        frame,
+                        bundle.getString("profileSavedSuccess"),
+                        bundle.getString("successTitle"),
+                        JOptionPane.INFORMATION_MESSAGE
+                );
+                return true;
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(
+                        frame,
+                        bundle.getString("saveError") + e.getMessage(),
+                        bundle.getString("errorTitle"),
+                        JOptionPane.ERROR_MESSAGE
+                );
+                return false;
+            }
+        } while (true);
+    }
+
+    public static void handleProfileLoadError(Component parent, ResourceBundle bundle, Exception e) {
+        Logger.error("Error loading profile: " + e.getMessage());
+        JOptionPane.showMessageDialog(
+                parent,
+                bundle.getString("loadError") + e.getMessage(),
+                bundle.getString("errorTitle"),
+                JOptionPane.ERROR_MESSAGE
+        );
+    }
+
+    public static void confirmAndClose(MainApplicationFrame frame, ResourceBundle bundle) {
+        Object[] options = {
+                bundle.getString("yesButtonText"),
+                bundle.getString("noButtonText")
+        };
+
+        int option = JOptionPane.showOptionDialog(
+                frame,
+                bundle.getString("saveBeforeExit"),
+                bundle.getString("exitConfirmation"),
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                options,
+                options[1]
+        );
+
+        if (option == JOptionPane.YES_OPTION) {
+            boolean saved = saveProfileWithValidation(frame, bundle);
+            if (saved) {
+                System.exit(0);
+            }
+        } else {
+            System.exit(0);
+        }
     }
 }
