@@ -13,6 +13,7 @@ public class GameWindow extends BasicWindow {
         super(true, true, true, true);
         this.visualizer = new GameVisualizer(bundle);
         initializeUI(bundle);
+        addInternalFrameListener(new WindowCloseHandler(bundle));
     }
 
     @Override

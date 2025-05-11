@@ -11,7 +11,7 @@ public abstract class BasicWindow extends JInternalFrame {
     protected abstract String getTitleKey();
 
     protected void setupDefaultCloseOperation() {
-        setDefaultCloseOperation(HIDE_ON_CLOSE);
+        setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
     }
 
     public void setTranslatedTitle(ResourceBundle bundle) {

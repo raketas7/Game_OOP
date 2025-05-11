@@ -19,6 +19,7 @@ public class LogWindow extends BasicWindow implements LogChangeListener {
         this.logSource = logSource;
         this.logContent = new TextArea("");
         initializeUI(bundle);
+        addInternalFrameListener(new WindowCloseHandler(bundle));
     }
 
     @Override

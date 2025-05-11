@@ -1,14 +1,13 @@
 package gui;
 
+import gui.profiling.ProfileManager;
+import log.Logger;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.util.Locale;
 import java.util.ResourceBundle;
-import java.beans.PropertyVetoException;
-
-import gui.profiling.ProfileManager;
-import log.Logger;
 
 public class ApplicationMenuBar {
     private final JMenuBar menuBar;
@@ -115,38 +114,10 @@ public class ApplicationMenuBar {
                 bundle.getString("exitMenuDescription"));
 
         JMenuItem exitMenuItem = new JMenuItem(bundle.getString("exitMenuItem"), KeyEvent.VK_Q);
-        exitMenuItem.addActionListener((event) -> confirmAndExit());
+        exitMenuItem.addActionListener((event) -> ProfileManager.confirmAndClose(mainFrame, bundle));
         exitMenu.add(exitMenuItem);
 
         return exitMenu;
-    }
-
-    private void confirmAndExit() {
-        Object[] options = {
-                bundle.getString("yesButtonText"),
-                bundle.getString("noButtonText")
-        };
-
-        int option = JOptionPane.showOptionDialog(
-                mainFrame,
-                bundle.getString("saveBeforeExit"),
-                bundle.getString("exitConfirmation"),
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.QUESTION_MESSAGE,
-                null,
-                options,
-                options[1]
-        );
-
-        if (option == JOptionPane.YES_OPTION) {
-            boolean saved = mainFrame.saveProfileWithValidation();
-            if (saved) {
-                System.exit(0);
-            }
-            // Если сохранение не удалось, остаемся в приложении
-        } else {
-            System.exit(0);
-        }
     }
 
     private void setLookAndFeel(String className) {
