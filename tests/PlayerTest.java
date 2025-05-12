@@ -1,5 +1,5 @@
 import gui.GameVisualizer;
-import gui.Player;
+import gui.PlayerMechanics.Player;
 import org.junit.Before;
 import org.junit.Test;
 import java.awt.*;
@@ -33,12 +33,14 @@ public class PlayerTest {
 
     @Test
     public void testCalculateNormalizedSpeed() {
-        // Движение по одной оси
-        assertEquals(Player.getSpeed(), Player.calculateNormalizedSpeed(5, 0));
+        // Движение по одной оси (нормализация = 1.0)
+        assertEquals(1.0, Player.calculateNormalizedSpeed(5, 0), 0.0001,
+                "Нормализация для движения по одной оси должна быть 1.0");
 
-        // Диагональное движение
-        double expectedDiagonalSpeed = Player.getSpeed() * Math.sqrt(2) / 2;
-        assertEquals(expectedDiagonalSpeed, Player.calculateNormalizedSpeed(5, 5));
+        // Диагональное движение (нормализация = sqrt(2)/2)
+        double expectedDiagonalFactor = Math.sqrt(2) / 2; // ≈ 0.707
+        assertEquals(expectedDiagonalFactor, Player.calculateNormalizedSpeed(5, 5), 0.0001,
+                "Нормализация для диагонального движения должна быть sqrt(2)/2");
     }
 
     @Test
