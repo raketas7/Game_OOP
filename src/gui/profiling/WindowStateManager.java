@@ -6,69 +6,15 @@ import gui.windows.GameWindow;
 import gui.windows.LogWindow;
 import log.Logger;
 import log.LogWindowSource;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 
 import javax.swing.*;
 import java.awt.*;
 import java.beans.PropertyVetoException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.ResourceBundle;
 
 public class WindowStateManager {
-    private static final String STATE_FILE = "window_state.json";
-
-    public static void saveWindowStates(MainApplicationFrame frame) throws PropertyVetoException {
-        Map<String, Object> windowStates = new HashMap<>();
-        windowStates.put("language", frame.getCurrentLocale().toString());
-
-        for (Map.Entry<String, JInternalFrame> entry : frame.getInternalWindows().entrySet()) {
-            windowStates.put(entry.getKey(), getWindowState(entry.getValue()));
-        }
-
-        try (FileWriter file = new FileWriter(STATE_FILE)) {
-            file.write(new JSONObject(windowStates).toJSONString());
-        } catch (IOException e) {
-            Logger.error("Error saving window states: " + e.getMessage());
-        }
-    }
-
-    public static Map<String, Object> loadWindowStates() {
-        Map<String, Object> windowStates = new HashMap<>();
-        JSONParser parser = new JSONParser();
-
-        try (FileReader reader = new FileReader(STATE_FILE)) {
-            JSONObject jsonObject = (JSONObject) parser.parse(reader);
-            windowStates.put("language", jsonObject.get("language"));
-
-            for (Object key : jsonObject.keySet()) {
-                String windowName = (String) key;
-                if (windowName.equals("language")) continue;
-
-                JSONObject state = (JSONObject) jsonObject.get(windowName);
-                Map<String, Object> stateMap = new HashMap<>();
-                stateMap.put("iconified", state.get("iconified"));
-                stateMap.put("maximized", state.get("maximized"));
-                stateMap.put("x", getIntValue(state.get("x")));
-                stateMap.put("y", getIntValue(state.get("y")));
-                stateMap.put("width", getIntValue(state.get("width")));
-                stateMap.put("height", getIntValue(state.get("height")));
-                stateMap.put("visible", state.get("visible"));
-                stateMap.put("closed", state.get("closed"));
-
-                windowStates.put(windowName, stateMap);
-            }
-        } catch (IOException | ParseException e) {
-            Logger.debug("No saved window states found or error loading: " + e.getMessage());
-        }
-
-        return windowStates;
-    }
 
     public static Map<String, Object> getWindowState(JInternalFrame window) throws PropertyVetoException {
         Map<String, Object> state = new HashMap<>();
@@ -95,26 +41,6 @@ public class WindowStateManager {
         return state;
     }
 
-    public static void applyWindowState(JInternalFrame window, Map<String, Object> state) {
-        if (state == null || window == null) return;
-
-        try {
-            int minWidth = 400;
-            int minHeight = 300;
-
-            int x = Math.max(0, getIntValue(state.get("x")));
-            int y = Math.max(0, getIntValue(state.get("y")));
-            int width = Math.max(minWidth, getIntValue(state.get("width")));
-            int height = Math.max(minHeight, getIntValue(state.get("height")));
-
-            window.setBounds(x, y, width, height);
-            window.setVisible(Boolean.parseBoolean(state.get("visible").toString()));
-
-        } catch (Exception e) {
-            Logger.error("Error applying window state: " + e.getMessage());
-        }
-    }
-
     public static void positionWindow(JInternalFrame window, Rectangle screenBounds,
                                       int defaultX, int defaultY,
                                       int defaultWidth, int defaultHeight) {
@@ -137,19 +63,28 @@ public class WindowStateManager {
 
         try {
             resetWindowState(window);
-
-            int defaultWidth = windowId.equals("logWindow") ? 400 : 800;
-            int defaultHeight = windowId.equals("logWindow") ? 500 : 600;
             int minSize = windowId.equals("logWindow") ? 300 : 400;
 
-            int x = calculateSafeCoordinate(getIntValue(state.get("x")),
-                    screenBounds.width, defaultWidth);
-            int y = calculateSafeCoordinate(getIntValue(state.get("y")),
-                    screenBounds.height, defaultHeight);
-            int width = calculateSafeSize(getIntValue(state.get("width")),
-                    minSize, screenBounds.width - x, defaultWidth);
-            int height = calculateSafeSize(getIntValue(state.get("height")),
-                    minSize, screenBounds.height - y, defaultHeight);
+            int x = getIntValue(state.get("x"));
+            int y = getIntValue(state.get("y"));
+            int width = getIntValue(state.get("width"));
+            int height = getIntValue(state.get("height"));
+
+            // Корректировка только если окно полностью невидимо
+            if (x + width < 0) {
+                x = 0; // Сдвигаем окно, чтобы хотя бы часть стала видимой
+            } else if (x > screenBounds.width) {
+                x = screenBounds.width - width; // Сдвигаем, если полностью за правой границей
+            }
+            if (y + height < 0) {
+                y = 0; // Сдвигаем вверх, если полностью за верхней границей
+            } else if (y > screenBounds.height) {
+                y = screenBounds.height - height; // Сдвигаем, если полностью за нижней границей
+            }
+
+            // Убедимся, что ширина и высота не меньше минимального размера
+            width = Math.max(minSize, width);
+            height = Math.max(minSize, height);
 
             window.setBounds(x, y, width, height);
             window.setVisible(Boolean.TRUE.equals(state.get("visible")));
@@ -211,9 +146,7 @@ public class WindowStateManager {
         }
 
         // Применяем специальные состояния
-        SwingUtilities.invokeLater(() -> {
-            applySpecialStates(frame, states);
-        });
+        SwingUtilities.invokeLater(() -> applySpecialStates(frame, states));
     }
 
     public static Map<String, Object> getWindowStateWithFocus(JInternalFrame window, boolean isFocused)
@@ -256,15 +189,14 @@ public class WindowStateManager {
     }
 
     public static JInternalFrame createWindow(String windowId, LogWindowSource logSource, ResourceBundle bundle) {
-        switch (windowId) {
-            case "logWindow":
-                return createLogWindow(logSource, bundle);
-            case "gameWindow":
-                return createGameWindow(bundle);
-            default:
+        return switch (windowId) {
+            case "logWindow" -> createLogWindow(logSource, bundle);
+            case "gameWindow" -> createGameWindow(bundle);
+            default -> {
                 Logger.error("Unknown window ID: " + windowId);
-                return null;
-        }
+                yield null;
+            }
+        };
     }
 
     public static void applySpecialStates(MainApplicationFrame frame, Map<String, Object> states) {
@@ -278,14 +210,5 @@ public class WindowStateManager {
 
     private static int getIntValue(Object value) {
         return ((Number) value).intValue();
-    }
-
-    private static int calculateSafeCoordinate(int value, int screenSize, int windowSize) {
-        return Math.max(0, Math.min(value, screenSize - windowSize));
-    }
-
-    private static int calculateSafeSize(int value, int minSize, int maxSize, int defaultSize) {
-        if (value <= 0) return defaultSize;
-        return Math.max(minSize, Math.min(value, maxSize));
     }
 }

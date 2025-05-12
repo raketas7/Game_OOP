@@ -46,8 +46,7 @@ public class ProfileManager {
         try (FileReader reader = new FileReader(filePath)) {
             Map<String, Object> result = (Map<String, Object>) parser.parse(reader);
             for (Object value : result.values()) {
-                if (value instanceof JSONObject) {
-                    JSONObject windowState = (JSONObject) value;
+                if (value instanceof JSONObject windowState) {
                     for (Object key : windowState.keySet()) {
                         String prop = (String) key;
                         if (prop.equals("x") || prop.equals("y") || prop.equals("width") || prop.equals("height")) {
@@ -83,26 +82,6 @@ public class ProfileManager {
         return files != null && files.length > 0;
     }
 
-    public static boolean showSaveDialog(Component parent, ResourceBundle bundle) {
-        Object[] options = {
-                bundle.getString("yesButtonText"),
-                bundle.getString("noButtonText")
-        };
-
-        int option = JOptionPane.showOptionDialog(
-                parent,
-                bundle.getString("saveBeforeExit"),
-                bundle.getString("exitConfirmation"),
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.QUESTION_MESSAGE,
-                null,
-                options,
-                options[1]
-        );
-
-        return option == JOptionPane.YES_OPTION;
-    }
-
     public static String showLoadDialog(Component parent, ResourceBundle bundle) {
         List<String> profiles = getAvailableProfiles();
         if (profiles.isEmpty()) {
@@ -115,29 +94,47 @@ public class ProfileManager {
             return null;
         }
 
+        // Создаем массив опций с переведенными текстами
         Object[] options = {
                 bundle.getString("loadButtonText"),
                 bundle.getString("cancelButtonText")
         };
 
-        return (String) JOptionPane.showInputDialog(
-                parent,
+        // Создаем диалог с переведенными текстами
+        JOptionPane pane = new JOptionPane(
                 bundle.getString("selectProfileToLoad"),
-                bundle.getString("loadProfile"),
                 JOptionPane.QUESTION_MESSAGE,
+                JOptionPane.YES_NO_OPTION,
                 null,
-                profiles.toArray(),
-                profiles.get(0)
+                options,
+                options[0]
         );
-    }
 
-    public static boolean profileExists(String profileName) {
-        if (profileName == null || profileName.trim().isEmpty()) {
-            return false;
+        // Получаем выбранный профиль
+        Object selectedValue = pane.getValue();
+        if (selectedValue == null ||
+                selectedValue.equals(bundle.getString("cancelButtonText")) ||
+                ((selectedValue instanceof Integer) && (Integer)selectedValue == JOptionPane.CLOSED_OPTION)) {
+            return null;
         }
 
-        File profileFile = new File(PROFILES_DIR + File.separator + profileName + ".json");
-        return profileFile.exists();
+        // Получаем выбранный профиль из ComboBox
+        JComboBox<String> comboBox = new JComboBox<>(profiles.toArray(new String[0]));
+        comboBox.setSelectedIndex(0);
+        pane.setMessage(new Object[] {bundle.getString("selectProfileToLoad"), comboBox});
+        pane.setOptionType(JOptionPane.OK_CANCEL_OPTION);
+
+        JDialog dialog = pane.createDialog(parent, bundle.getString("loadProfile"));
+        dialog.setVisible(true);
+
+        selectedValue = pane.getValue();
+        if (selectedValue == null ||
+                selectedValue.equals(JOptionPane.CANCEL_OPTION) ||
+                ((selectedValue instanceof Integer) && (Integer)selectedValue == JOptionPane.CLOSED_OPTION)) {
+            return null;
+        }
+
+        return (String) comboBox.getSelectedItem();
     }
 
     public static boolean isValidProfileName(String name) {
@@ -241,29 +238,56 @@ public class ProfileManager {
     }
 
     public static void confirmAndClose(MainApplicationFrame frame, ResourceBundle bundle) {
-        Object[] options = {
+        // Сначала спрашиваем подтверждение выхода
+        Object[] exitOptions = {
                 bundle.getString("yesButtonText"),
                 bundle.getString("noButtonText")
         };
 
-        int option = JOptionPane.showOptionDialog(
+        int exitChoice = JOptionPane.showOptionDialog(
                 frame,
-                bundle.getString("saveBeforeExit"),
+                bundle.getString("confirmExitQuestion"), // Нужно добавить этот ключ в ресурсы
                 bundle.getString("exitConfirmation"),
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.QUESTION_MESSAGE,
                 null,
-                options,
-                options[1]
+                exitOptions,
+                exitOptions[1]
         );
 
-        if (option == JOptionPane.YES_OPTION) {
+        // Если пользователь не хочет выходить, просто возвращаемся
+        if (exitChoice != JOptionPane.YES_OPTION) {
+            return;
+        }
+
+        // Теперь спрашиваем о сохранении
+        Object[] saveOptions = {
+                bundle.getString("yesButtonText"),
+                bundle.getString("noButtonText"),
+                bundle.getString("cancelButtonText")
+        };
+
+        int saveChoice = JOptionPane.showOptionDialog(
+                frame,
+                bundle.getString("saveBeforeExit"),
+                bundle.getString("saveConfirmation"),
+                JOptionPane.YES_NO_CANCEL_OPTION,
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                saveOptions,
+                saveOptions[2]
+        );
+
+        // Обработка выбора сохранения
+        if (saveChoice == JOptionPane.YES_OPTION) {
             boolean saved = saveProfileWithValidation(frame, bundle);
             if (saved) {
                 System.exit(0);
             }
-        } else {
+        } else if (saveChoice == JOptionPane.NO_OPTION) {
             System.exit(0);
         }
+        // CANCEL - ничего не делаем (остаёмся в приложении)
     }
+
 }
