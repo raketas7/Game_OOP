@@ -16,31 +16,6 @@ import java.util.ResourceBundle;
 
 public class WindowStateManager {
 
-    public static Map<String, Object> getWindowState(JInternalFrame window) throws PropertyVetoException {
-        Map<String, Object> state = new HashMap<>();
-        boolean wasMaximized = window.isMaximum();
-        boolean wasIconified = window.isIcon();
-
-        state.put("iconified", wasIconified);
-        state.put("maximized", wasMaximized);
-        state.put("closed", window.isClosed());
-
-        if (wasIconified) window.setIcon(false);
-        if (wasMaximized) window.setMaximum(false);
-
-        Rectangle bounds = window.getBounds();
-        state.put("x", bounds.x);
-        state.put("y", bounds.y);
-        state.put("width", bounds.width);
-        state.put("height", bounds.height);
-        state.put("visible", window.isVisible() && !window.isClosed());
-
-        if (wasMaximized) window.setMaximum(true);
-        if (wasIconified) window.setIcon(true);
-
-        return state;
-    }
-
     public static void positionWindow(JInternalFrame window, Rectangle screenBounds,
                                       int defaultX, int defaultY,
                                       int defaultWidth, int defaultHeight) {
@@ -54,6 +29,43 @@ public class WindowStateManager {
         window.setBounds(x, y, width, height);
     }
 
+    public static Map<String, Object> getWindowState(JInternalFrame window) throws PropertyVetoException {
+        Map<String, Object> state = new HashMap<>();
+
+        // 1. Проверяем и сохраняем свернутость
+        boolean wasIconified = window.isIcon();
+        state.put("iconified", wasIconified);
+        if (wasIconified) {
+            window.setIcon(false); // Разворачиваем для получения реальных координат
+        }
+
+        // 2. Проверяем и сохраняем максимизацию
+        boolean wasMaximized = window.isMaximum();
+        state.put("maximized", wasMaximized);
+        if (wasMaximized) {
+            window.setMaximum(false); // Восстанавливаем нормальный размер
+        }
+
+        // 3. Сохраняем остальные параметры
+        state.put("closed", window.isClosed());
+        Rectangle bounds = window.getBounds();
+        state.put("x", bounds.x);
+        state.put("y", bounds.y);
+        state.put("width", bounds.width);
+        state.put("height", bounds.height);
+        state.put("visible", window.isVisible() && !window.isClosed());
+
+        // 4. Восстанавливаем исходные состояния в обратном порядке
+        if (wasMaximized) {
+            window.setMaximum(true);
+        }
+        if (wasIconified) {
+            window.setIcon(true);
+        }
+
+        return state;
+    }
+
     public static void restoreWindowState(MainApplicationFrame frame, Map<String, Object> state,
                                           Rectangle screenBounds, String windowId) {
         if (state == null) return;
@@ -62,35 +74,37 @@ public class WindowStateManager {
         if (window == null) return;
 
         try {
+            // 1. Сбрасываем все специальные состояния
             resetWindowState(window);
-            int minSize = windowId.equals("logWindow") ? 300 : 400;
 
+            // 2. Устанавливаем базовые параметры (координаты и размеры)
+            int minSize = windowId.equals("logWindow") ? 300 : 400;
             int x = getIntValue(state.get("x"));
             int y = getIntValue(state.get("y"));
-            int width = getIntValue(state.get("width"));
-            int height = getIntValue(state.get("height"));
+            int width = Math.max(minSize, getIntValue(state.get("width")));
+            int height = Math.max(minSize, getIntValue(state.get("height")));
 
-            // Корректировка только если окно полностью невидимо
-            if (x + width < 0) {
-                x = 0; // Сдвигаем окно, чтобы хотя бы часть стала видимой
-            } else if (x > screenBounds.width) {
-                x = screenBounds.width - width; // Сдвигаем, если полностью за правой границей
-            }
-            if (y + height < 0) {
-                y = 0; // Сдвигаем вверх, если полностью за верхней границей
-            } else if (y > screenBounds.height) {
-                y = screenBounds.height - height; // Сдвигаем, если полностью за нижней границей
-            }
-
-            // Убедимся, что ширина и высота не меньше минимального размера
-            width = Math.max(minSize, width);
-            height = Math.max(minSize, height);
+            // Корректировка координат, чтобы окно было видимым
+            if (x + width < 0) x = 0;
+            else if (x > screenBounds.width) x = screenBounds.width - width;
+            if (y + height < 0) y = 0;
+            else if (y > screenBounds.height) y = screenBounds.height - height;
 
             window.setBounds(x, y, width, height);
             window.setVisible(Boolean.TRUE.equals(state.get("visible")));
 
             if (window.getParent() == null) {
                 frame.getContentPane().add(window);
+            }
+
+            // 3. Применяем максимизацию (если нужно)
+            if (Boolean.TRUE.equals(state.get("maximized"))) {
+                window.setMaximum(true);
+            }
+
+            // 4. Применяем свернутость (если нужно)
+            if (Boolean.TRUE.equals(state.get("iconified"))) {
+                window.setIcon(true);
             }
 
             if (window instanceof BasicWindow) {
@@ -100,6 +114,7 @@ public class WindowStateManager {
             Logger.error("Error restoring window state for " + windowId + ": " + e.getMessage());
         }
     }
+
 
     public static void applyWindowSpecialState(JInternalFrame window, Map<String, Object> state) {
         if (state == null || window == null) return;
@@ -170,7 +185,6 @@ public class WindowStateManager {
 
     public static LogWindow createLogWindow(LogWindowSource logSource, ResourceBundle bundle) {
         LogWindow window = new LogWindow(logSource, bundle);
-        Logger.debug(bundle.getString("logMessage"));
         window.setClosable(true);
         window.setResizable(true);
         window.setMaximizable(true);
@@ -184,7 +198,6 @@ public class WindowStateManager {
         window.setResizable(true);
         window.setMaximizable(true);
         window.setIconifiable(true);
-        window.setMinimumSize(new Dimension(400, 300));
         return window;
     }
 

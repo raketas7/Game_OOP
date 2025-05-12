@@ -178,6 +178,9 @@ public class MainApplicationFrame extends JFrame {
     public void showGameWindow() {
         if (!windows.containsKey("gameWindow") || windows.get("gameWindow").isClosed()) {
             GameWindow gameWindow = WindowStateManager.createGameWindow(bundle);
+            GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+            Rectangle screenBounds = gd.getDefaultConfiguration().getBounds();
+            WindowStateManager.positionWindow(gameWindow, screenBounds, 470, 50, 800, 600);
             addWindow("gameWindow", gameWindow);
         } else {
             windows.get("gameWindow").toFront();
