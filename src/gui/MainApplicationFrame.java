@@ -2,7 +2,6 @@ package gui;
 
 import gui.profiling.ProfileManager;
 import gui.profiling.WindowStateManager;
-import gui.windows.BasicWindow;
 import gui.windows.GameWindow;
 import gui.windows.LogWindow;
 import log.LogWindowSource;
@@ -183,10 +182,6 @@ public class MainApplicationFrame extends JFrame {
         } else {
             windows.get("gameWindow").toFront();
         }
-    }
-
-    public Locale getCurrentLocale() {
-        return currentLocale;
     }
 
     public Map<String, JInternalFrame> getInternalWindows() {

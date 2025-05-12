@@ -4,7 +4,6 @@ import gui.profiling.ProfileManager;
 import log.Logger;
 
 import javax.swing.*;
-import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.util.Locale;
 import java.util.ResourceBundle;
