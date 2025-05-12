@@ -1,5 +1,6 @@
 import gui.*;
 import gui.Enemies.*;
+import gui.PlayerMechanics.Player;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -115,23 +116,31 @@ public class GameVisualizerTest {
     @Test
     public void testPlayerEnemyCollision() {
         // Устанавливаем начальное количество врагов
-        waveManager.setEnemiesAlive(1); // Устанавливаем 1, так как будем добавлять одного врага
+        waveManager.setEnemiesAlive(1);
 
-        // Создаем врага в той же позиции, что и игрок
+        // Сохраняем начальное здоровье игрока
+        int initialHealth = player.getHealth(); // Обычно 1000
+
+        // Создаем BasicEnemy в той же позиции, что и игрок
         BasicEnemy enemy = new BasicEnemy(player.getX(), player.getY());
         gameVisualizer.getEnemies().add(enemy);
 
-        // Обновляем смещение камеры (чтобы collision detection работал правильно)
+        // Обновляем смещение камеры
         gameVisualizer.exposedUpdateCamera();
 
         // Вызываем проверку коллизий
         gameVisualizer.exposedCheckCollisions();
 
         // Проверяем результаты
-        assertThat(gameVisualizer.getEnemies().size(),
-                anyOf(is(4), is(5)));
+        assertEquals("Список врагов должен быть пуст после столкновения",
+                0, gameVisualizer.getEnemies().size());
         assertEquals("Счетчик живых врагов должен уменьшиться",
                 0, waveManager.getEnemiesAlive());
+
+        // Исправляем ожидаемое значение урона (BasicEnemy наносит 20 урона)
+        int expectedHealth = initialHealth - 20;
+        assertEquals("Здоровье игрока должно уменьшиться после столкновения",
+                expectedHealth, player.getHealth());
     }
 
 

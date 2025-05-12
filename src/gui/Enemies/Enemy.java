@@ -11,14 +11,16 @@ public abstract class Enemy {
     protected final Color color;
     protected final int collisionRadius;
     protected double pushForce = 0.5;
+    protected int health;
 
-    public Enemy(double x, double y, int size, double speed, Color color, int collisionRadius) {
+    public Enemy(double x, double y, int size, double speed, Color color, int collisionRadius, int health) {
         this.x = x;
         this.y = y;
         this.size = size;
         this.speed = speed;
         this.color = color;
         this.collisionRadius = collisionRadius;
+        this.health = health;
     }
 
     public void move(double targetX, double targetY, List<Enemy> allEnemies) {
@@ -34,7 +36,6 @@ public abstract class Enemy {
         double newX = x + dx;
         double newY = y + dy;
 
-        // Проверка коллизий со всеми врагами
         Rectangle futureBounds = new Rectangle(
                 (int)(newX - (double) collisionRadius / 2),
                 (int)(newY - (double) collisionRadius / 2),
@@ -42,10 +43,8 @@ public abstract class Enemy {
                 collisionRadius
         );
 
-        // Корректировка движения при столкновении
         for (Enemy other : allEnemies) {
             if (other != this && futureBounds.intersects(other.getCollisionBounds())) {
-                // Вычисляем вектор между врагами
                 double collisionDx = x - other.getX();
                 double collisionDy = y - other.getY();
                 double collisionDist = Math.sqrt(collisionDx * collisionDx + collisionDy * collisionDy);
@@ -54,9 +53,7 @@ public abstract class Enemy {
                     collisionDx /= collisionDist;
                     collisionDy /= collisionDist;
 
-                    double penetration = (double) (collisionRadius + other.collisionRadius) /2 - collisionDist;
-
-                    // Корректируем позицию с учетом размера врагов
+                    double penetration = (double) (collisionRadius + other.collisionRadius) / 2 - collisionDist;
                     double massRatio = (double)size / (size + other.size);
                     newX += collisionDx * penetration * massRatio * pushForce;
                     newY += collisionDy * penetration * massRatio * pushForce;
@@ -64,7 +61,6 @@ public abstract class Enemy {
             }
         }
 
-        // Обновляем позицию
         x = newX;
         y = newY;
     }
@@ -90,15 +86,27 @@ public abstract class Enemy {
 
     public Rectangle getCollisionBounds() {
         return new Rectangle(
-                (int)(x - (double) collisionRadius /2),
-                (int)(y - (double) collisionRadius /2),
+                (int)(x - (double) collisionRadius / 2),
+                (int)(y - (double) collisionRadius / 2),
                 collisionRadius,
                 collisionRadius
         );
     }
 
+    public void takeDamage(int damage) {
+        health -= damage;
+    }
+
+    public boolean isAlive() {
+        return health > 0;
+    }
+
+    public abstract int getXpReward();
+    public abstract int getDamage();
+
     public double getX() { return x; }
     public double getY() { return y; }
     public int getSize() { return size; }
     public Color getColor() { return color; }
+    public int getHealth() { return health; }
 }

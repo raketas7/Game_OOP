@@ -1,6 +1,8 @@
 package gui;
 
 import gui.Enemies.*;
+import gui.PlayerMechanics.Player;
+
 import java.util.*;
 import java.awt.Rectangle;
 
@@ -9,7 +11,7 @@ public class WaveManager {
     private int pointsAvailable;
     private int enemiesAlive = 0;
     private long lastSpawnTime;
-    private static final long WAVE_COOLDOWN = 5000;
+    private static final long WAVE_COOLDOWN = 15000;
 
     public int getCurrentWave() { return currentWave; }
     public int getPointsAvailable() { return pointsAvailable; }
@@ -101,8 +103,8 @@ public class WaveManager {
 
     private boolean isPositionFree(double x, double y, List<Enemy> existingEnemies, List<Enemy> newEnemies) {
         Rectangle newEnemyBounds = new Rectangle(
-                (int)(x - (double) Player.SIZE /2),
-                (int)(y - (double) Player.SIZE /2),
+                (int)(x - (double) Player.SIZE / 2),
+                (int)(y - (double) Player.SIZE / 2),
                 Player.SIZE,
                 Player.SIZE
         );
@@ -131,5 +133,12 @@ public class WaveManager {
         }
         return affordableEnemies.isEmpty() ? null :
                 affordableEnemies.get(random.nextInt(affordableEnemies.size()));
+    }
+
+    public void reset() {
+        currentWave = 0;
+        pointsAvailable = 0;
+        enemiesAlive = 0;
+        lastSpawnTime = 0;
     }
 }
