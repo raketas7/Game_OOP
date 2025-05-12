@@ -27,5 +27,6 @@ public class GameWindow extends BasicWindow {
         getContentPane().add(panel);
         setupDefaultCloseOperation();
         setTranslatedTitle(bundle);
+        pack();
     }
 }
