@@ -18,7 +18,7 @@ import java.util.Map;
 import java.util.ResourceBundle;
 
 public class ProfileManager {
-    private static final String PROFILES_DIR = "profiles";
+    public static final String PROFILES_DIR = "profiles";
 
     public static void saveProfile(String profileName, Map<String, Object> windowStates) throws IOException {
         File dir = new File(PROFILES_DIR);
