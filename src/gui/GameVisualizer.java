@@ -15,7 +15,6 @@ import java.util.*;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.stream.Collectors;
 
 public class GameVisualizer extends JPanel implements KeyListener, ComponentListener, MouseMotionListener {
     public static final int MAP_SIZE = 3200;
@@ -31,18 +30,26 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
     private final Set<Integer> activeKeys = new HashSet<>();
     private BufferedImage backgroundImage;
     private final List<Enemy> enemies = Collections.synchronizedList(new ArrayList<>());
-    private final List<Bullet> bullets = Collections.synchronizedList(new ArrayList<>());
+    protected final List<Bullet> bullets = Collections.synchronizedList(new ArrayList<>());
     private final WaveManager waveManager;
-    private int mouseX;
-    private int mouseY;
-    private boolean isPaused = false;
-    private boolean upgradeSelectionMode = false;
-    private List<UpgradeType> offeredUpgrades = new ArrayList<>();
-    private boolean gameOver = false;
+    protected double mouseX;
+    protected double mouseY;
+    protected boolean isPaused = false;
+    protected boolean upgradeSelectionMode = false;
+    protected List<UpgradeType> offeredUpgrades = new ArrayList<>();
+    protected boolean gameOver = false;
     private int frameCounter = 0;
     private int countdown = 10;
-    private Timer countdownTimer;
-    private enum GameState { START_SCREEN, PLAYING, GAME_OVER }
+
+    public GameState getGameState() {
+        return gameState;
+    }
+
+    public Component getStartButton() {
+        return startButton;
+    }
+
+    public enum GameState { START_SCREEN, PLAYING, GAME_OVER }
     private GameState gameState = GameState.START_SCREEN;
     private JButton startButton;
 
@@ -134,7 +141,7 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
             }
         }, 0, 20);
 
-        countdownTimer = new Timer(true);
+        Timer countdownTimer = new Timer(true);
         countdownTimer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
@@ -149,7 +156,7 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
         }, 0, 1000);
     }
 
-    private void resetGame() {
+    public void resetGame() {
         player.reset();
         enemies.clear();
         bullets.clear();
@@ -174,10 +181,10 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
     protected void movePlayer() {
         double dx = 0, dy = 0;
 
-        if (activeKeys.contains(KeyEvent.VK_W)) dy -= Player.calculateNormalizedSpeed(0, dy) * player.getSpeed();
-        if (activeKeys.contains(KeyEvent.VK_S)) dy += Player.calculateNormalizedSpeed(0, dy) * player.getSpeed();
-        if (activeKeys.contains(KeyEvent.VK_A)) dx -= Player.calculateNormalizedSpeed(dx, 0) * player.getSpeed();
-        if (activeKeys.contains(KeyEvent.VK_D)) dx += Player.calculateNormalizedSpeed(dx, 0) * player.getSpeed();
+        if (activeKeys.contains(KeyEvent.VK_W)) dy -= Player.calculateNormalizedSpeed(0, dy) * Player.getSpeed();
+        if (activeKeys.contains(KeyEvent.VK_S)) dy += Player.calculateNormalizedSpeed(0, dy) * Player.getSpeed();
+        if (activeKeys.contains(KeyEvent.VK_A)) dx -= Player.calculateNormalizedSpeed(dx, 0) * Player.getSpeed();
+        if (activeKeys.contains(KeyEvent.VK_D)) dx += Player.calculateNormalizedSpeed(dx, 0) * Player.getSpeed();
 
         player.move(dx, dy, MAP_SIZE);
     }
@@ -190,7 +197,7 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
         cameraOffsetY = Math.max(0, Math.min(targetY, MAP_SIZE - windowHeight));
     }
 
-    private void shoot() {
+    protected void shoot() {
         synchronized(bullets) {
             double adjustedMouseX = mouseX + cameraOffsetX;
             double adjustedMouseY = mouseY + cameraOffsetY;
@@ -199,10 +206,9 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
         }
     }
 
-    private void updateBullets() {
+    protected void updateBullets() {
         synchronized(bullets) {
             Iterator<Bullet> bulletIterator = bullets.iterator();
-            int previousLevel = player.getLevel();
             while (bulletIterator.hasNext()) {
                 Bullet bullet = bulletIterator.next();
                 bullet.update();
@@ -228,14 +234,11 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
                     bulletIterator.remove();
                 }
             }
-            if (player.getLevel() > previousLevel) {
+            if (player.hasLeveledUp()) {
                 isPaused = true;
                 upgradeSelectionMode = true;
                 offeredUpgrades = player.getUpgradeOptions();
-                System.out.println("Level up to " + player.getLevel() + ", offering upgrades: " +
-                        offeredUpgrades.stream()
-                                .map(upgrade -> bundle.getString(upgrade.getDescriptionKey()))
-                                .collect(Collectors.joining(", ")));
+                player.resetLevelUpFlag();
             }
         }
     }
@@ -251,7 +254,7 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
         }
     }
 
-    private void moveEnemies() {
+    protected void moveEnemies() {
         synchronized(enemies) {
             for (Enemy enemy : enemies) {
                 enemy.move(player.getX(), player.getY(), enemies);
@@ -259,7 +262,7 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
         }
     }
 
-    protected void checkCollisions() {
+    protected void  checkCollisions() {
         synchronized(enemies) {
             Iterator<Enemy> iterator = enemies.iterator();
             while (iterator.hasNext()) {
@@ -271,14 +274,14 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
                     player.takeDamage(enemy.getDamage());
                     iterator.remove();
                     waveManager.enemyDied();
-                    if (!player.isAlive()) {
-                        gameOver = true;
-                        isPaused = true;
-                        gameState = GameState.GAME_OVER;
-                        repaint();
-                    }
                 }
             }
+        }
+        if (!player.isAlive()) {
+            gameOver = true;
+            isPaused = true;
+            gameState = GameState.GAME_OVER;
+            repaint();
         }
     }
 

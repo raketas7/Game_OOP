@@ -141,4 +141,8 @@ public class WaveManager {
         enemiesAlive = 0;
         lastSpawnTime = 0;
     }
+
+    public void setLastSpawnTime(long time) {
+        this.lastSpawnTime = time;
+    }
 }
