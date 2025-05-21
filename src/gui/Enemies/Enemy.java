@@ -107,6 +107,6 @@ public abstract class Enemy {
     public double getX() { return x; }
     public double getY() { return y; }
     public int getSize() { return size; }
-    public Color getColor() { return color; }
     public int getHealth() { return health; }
+    public Color getColor() { return color; }
 }

@@ -13,6 +13,7 @@ public class Player {
     private int bulletDamage = 10;
     private int health = 1000;
     private final int maxHealth = 1000;
+    private boolean leveledUp = false;
 
     private double x;
     private double y;
@@ -41,7 +42,12 @@ public class Player {
         List<Bullet> newBullets = new ArrayList<>();
         long currentTime = System.currentTimeMillis();
         if (currentTime - lastShotTime >= fireRate) {
-            Bullet bullet = new Bullet(x + SIZE / 2.0, y + SIZE / 2.0, mouseX, mouseY, bulletDamage);
+            Bullet bullet = new Bullet(x + SIZE / 2.0, y + SIZE / 2.0, mouseX, mouseY, bulletDamage) {
+                @Override
+                protected long getCurrentTime() {
+                    return 0;
+                }
+            };
             newBullets.add(bullet);
             lastShotTime = currentTime;
         }
@@ -59,6 +65,15 @@ public class Player {
         xp -= xpToNextLevel;
         level++;
         xpToNextLevel = 100 * level;
+        leveledUp = true;
+    }
+
+    public boolean hasLeveledUp() {
+        return leveledUp;
+    }
+
+    public void resetLevelUpFlag() {
+        leveledUp = false;
     }
 
     public List<UpgradeType> getUpgradeOptions() {
@@ -112,7 +127,6 @@ public class Player {
     public double getX() { return x; }
     public double getY() { return y; }
     public static double getSpeed() { return speed; }
-    public long getFireRate() { return fireRate; }
     public int getLevel() { return level; }
     public int getXp() { return xp; }
     public int getXpToNextLevel() { return xpToNextLevel; }
@@ -139,7 +153,7 @@ public class Player {
 
     public static double calculateNormalizedSpeed(double dx, double dy) {
         if (dx != 0 && dy != 0) {
-            return 1.0 * Math.sqrt(2) / 2;
+            return Math.sqrt(2) / 2;
         }
         return 1.0;
     }
