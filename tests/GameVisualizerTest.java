@@ -1,6 +1,7 @@
 import gui.*;
 import gui.Enemies.*;
 import gui.PlayerMechanics.Player;
+import gui.Visuals.GameVisualizer;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -10,7 +11,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.ResourceBundle;
 
-import static gui.GameVisualizer.MAP_SIZE;
+import static gui.Visuals.GameVisualizer.MAP_SIZE;
 import static org.hamcrest.core.AnyOf.anyOf;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;

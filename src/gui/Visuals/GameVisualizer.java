@@ -1,9 +1,11 @@
-package gui;
+package gui.Visuals;
 
 import gui.Enemies.Enemy;
 import gui.PlayerMechanics.Player;
 import gui.PlayerMechanics.Bullet;
+import gui.PlayerMechanics.ShopUpgradeType;
 import gui.PlayerMechanics.UpgradeType;
+import gui.WaveManager;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -14,8 +16,6 @@ import java.io.IOException;
 import java.util.*;
 import java.util.List;
 import java.util.Timer;
-import java.util.TimerTask;
-import java.util.stream.Collectors;
 
 public class GameVisualizer extends JPanel implements KeyListener, ComponentListener, MouseMotionListener {
     public static final int MAP_SIZE = 3200;
@@ -42,9 +42,11 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
     private int frameCounter = 0;
     private int countdown = 10;
     private Timer countdownTimer;
-    private enum GameState { START_SCREEN, PLAYING, GAME_OVER }
+    private enum GameState { START_SCREEN, PLAYING, GAME_OVER, SHOP }
     private GameState gameState = GameState.START_SCREEN;
     private JButton startButton;
+    private JButton shopButton;
+    private JPanel shopPanel;
 
     public GameVisualizer(ResourceBundle bundle) {
         this.bundle = bundle;
@@ -54,6 +56,8 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
         loadResources();
         setupTimers();
         initStartButton();
+        initShopButton();
+        initShopPanel();
     }
 
     public Set<Integer> getActiveKeys() { return activeKeys; }
@@ -80,6 +84,7 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
                 requestFocusInWindow();
                 if (gameState == GameState.START_SCREEN) {
                     startButton.requestFocusInWindow();
+                    shopButton.requestFocusInWindow();
                 }
             }
         });
@@ -95,10 +100,81 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
         startButton.addActionListener(e -> {
             gameState = GameState.PLAYING;
             startButton.setVisible(false);
+            shopButton.setVisible(false);
             requestFocusInWindow();
             repaint();
         });
         add(startButton);
+    }
+
+    private void initShopButton() {
+        shopButton = new JButton(bundle.getString("shopButtonText"));
+        shopButton.setFont(new Font("Arial", Font.BOLD, 24));
+        shopButton.setBounds(windowWidth / 2 - 100, windowHeight / 2 + 110, 200, 50);
+        shopButton.setVisible(true);
+        shopButton.addActionListener(e -> {
+            gameState = GameState.SHOP;
+            startButton.setVisible(false);
+            shopButton.setVisible(false);
+            shopPanel.setVisible(true);
+            updateShopButtons();
+            requestFocusInWindow();
+            repaint();
+        });
+        add(shopButton);
+    }
+
+    private void initShopPanel() {
+        shopPanel = new JPanel();
+        shopPanel.setLayout(new GridLayout(player.getShop().getUpgrades().size() + 1, 1, 10, 10));
+        shopPanel.setBounds(windowWidth / 2 - 150, windowHeight / 2 - 100, 300, 50 * (player.getShop().getUpgrades().size() + 1));
+        shopPanel.setOpaque(false);
+
+        for (ShopUpgradeType upgradeType : player.getShop().getUpgrades().keySet()) {
+            JButton button = new JButton();
+            updateShopButtonText(button, upgradeType);
+            button.addActionListener(e -> purchaseUpgrade(upgradeType, button));
+            shopPanel.add(button);
+        }
+
+        JButton backButton = new JButton(bundle.getString("backButtonText"));
+        backButton.addActionListener(e -> {
+            gameState = GameState.START_SCREEN;
+            shopPanel.setVisible(false);
+            startButton.setVisible(true);
+            shopButton.setVisible(true);
+            repaint();
+        });
+        shopPanel.add(backButton);
+        shopPanel.setVisible(false);
+        add(shopPanel);
+    }
+
+    private void updateShopButtonText(JButton button, ShopUpgradeType upgrade) {
+        int level = player.getShopUpgradeLevel(upgrade);
+        int cost = player.getShopUpgradeCost(upgrade);
+        boolean canUpgrade = player.canUpgrade(upgrade);
+        button.setText(String.format("%s (Level %d, Cost: %d)",
+                bundle.getString(upgrade.getDescriptionKey()), level, canUpgrade ? cost : 0));
+        button.setEnabled(canUpgrade && player.canAffordShopUpgrade(upgrade));
+    }
+
+    private void updateShopButtons() {
+        int index = 0;
+        for (Component comp : shopPanel.getComponents()) {
+            if (comp instanceof JButton && !comp.equals(shopPanel.getComponent(shopPanel.getComponentCount() - 1))) {
+                ShopUpgradeType upgrade = player.getShop().getUpgrades().keySet().toArray(new ShopUpgradeType[0])[index];
+                updateShopButtonText((JButton) comp, upgrade);
+                index++;
+            }
+        }
+    }
+
+    private void purchaseUpgrade(ShopUpgradeType upgrade, JButton button) {
+        player.purchaseUpgrade(upgrade);
+        updateShopButtonText(button, upgrade);
+        updateShopButtons();
+        repaint();
     }
 
     private void loadResources() {
@@ -159,7 +235,10 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
         countdown = 10;
         gameState = GameState.START_SCREEN;
         startButton.setBounds(windowWidth / 2 - 100, windowHeight / 2 + 50, 200, 50);
+        shopButton.setBounds(windowWidth / 2 - 100, windowHeight / 2 + 110, 200, 50);
         startButton.setVisible(true);
+        shopButton.setVisible(true);
+        shopPanel.setVisible(false);
         repaint();
     }
 
@@ -168,6 +247,12 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
         windowHeight = getHeight() > 0 ? getHeight() : Toolkit.getDefaultToolkit().getScreenSize().height;
         if (startButton != null) {
             startButton.setBounds(windowWidth / 2 - 100, windowHeight / 2 + 50, 200, 50);
+        }
+        if (shopButton != null) {
+            shopButton.setBounds(windowWidth / 2 - 100, windowHeight / 2 + 110, 200, 50);
+        }
+        if (shopPanel != null) {
+            shopPanel.setBounds(windowWidth / 2 - 150, windowHeight / 2 - 100, 300, 50 * (player.getShop().getUpgrades().size() + 1));
         }
     }
 
@@ -218,6 +303,7 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
                             enemy.takeDamage(bullet.getDamage());
                             if (!enemy.isAlive()) {
                                 player.addXp(enemy.getXpReward());
+                                player.addCoins(enemy.getCoinReward());
                                 enemyIterator.remove();
                                 waveManager.enemyDied();
                             }
@@ -232,10 +318,6 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
                 isPaused = true;
                 upgradeSelectionMode = true;
                 offeredUpgrades = player.getUpgradeOptions();
-                System.out.println("Level up to " + player.getLevel() + ", offering upgrades: " +
-                        offeredUpgrades.stream()
-                                .map(upgrade -> bundle.getString(upgrade.getDescriptionKey()))
-                                .collect(Collectors.joining(", ")));
             }
         }
     }
@@ -318,6 +400,7 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
             g2d.drawString(bundle.getString("enemies") + waveManager.getEnemiesAlive(), 20, 60);
             g2d.drawString(bundle.getString("levelLabel") + player.getLevel() + " " + bundle.getString("xpLabel") + player.getXp() + "/" + player.getXpToNextLevel(), 20, 90);
             g2d.drawString(bundle.getString("healthLabel") + player.getHealth() + "/" + player.getMaxHealth(), 20, 120);
+            g2d.drawString(bundle.getString("coinsLabel") + player.getCoins(), 20, 150);
 
             if (upgradeSelectionMode) {
                 g2d.setColor(new Color(0, 0, 0, 0.7f));
@@ -349,6 +432,14 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
             g2d.setColor(Color.WHITE);
             g2d.setFont(new Font("Arial", Font.BOLD, 48));
             g2d.drawString(bundle.getString("welcomeMessage"), windowWidth / 2 - 150, windowHeight / 2 - 50);
+        } else if (gameState == GameState.SHOP) {
+            g2d.setColor(new Color(0, 0, 0, 0.7f));
+            g2d.fillRect(0, 0, windowWidth, windowHeight);
+            g2d.setColor(Color.WHITE);
+            g2d.setFont(new Font("Arial", Font.BOLD, 48));
+            g2d.drawString(bundle.getString("shopTitle"), windowWidth / 2 - 100, windowHeight / 2 - 150);
+            g2d.setFont(new Font("Arial", Font.BOLD, 20));
+            g2d.drawString(bundle.getString("coinsLabel") + player.getCoins(), windowWidth / 2 - 100, windowHeight / 2 - 120);
         }
     }
 
@@ -362,7 +453,6 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
 
             if (choice > 0 && choice <= offeredUpgrades.size()) {
                 UpgradeType selectedUpgrade = offeredUpgrades.get(choice - 1);
-                System.out.println("Selected upgrade: " + bundle.getString(selectedUpgrade.getDescriptionKey()));
                 player.applyUpgrade(selectedUpgrade);
                 upgradeSelectionMode = false;
                 isPaused = false;

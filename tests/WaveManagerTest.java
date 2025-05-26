@@ -1,5 +1,5 @@
 import gui.Enemies.*;
-import gui.GameVisualizer;
+import gui.Visuals.GameVisualizer;
 import gui.PlayerMechanics.Player;
 import gui.WaveManager;
 import org.junit.Before;

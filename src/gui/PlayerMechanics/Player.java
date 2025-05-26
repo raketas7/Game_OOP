@@ -1,30 +1,35 @@
 package gui.PlayerMechanics;
 
-import gui.GameVisualizer;
+import gui.Visuals.GameVisualizer;
 
 import java.awt.*;
 import java.util.*;
 import java.util.List;
+import java.util.prefs.Preferences;
+import gui.PlayerMechanics.Upgrades.*;
 
 public class Player {
     public static final int SIZE = 30;
     private static double speed = 5.0;
     private long fireRate = 150;
     private int bulletDamage = 10;
-    private int health = 1000;
-    private final int maxHealth = 1000;
-
+    private int health = 100;
+    private final int maxHealth = 100;
+    private int coins = 0;
     private double x;
     private double y;
     private long lastShotTime;
     private int level = 1;
     private int xp = 0;
     private int xpToNextLevel = 100;
+    private final Shop shop;
 
     public Player(double startX, double startY) {
         this.x = startX;
         this.y = startY;
         this.lastShotTime = 0;
+        this.coins = loadCoins();
+        this.shop = new Shop(this);
     }
 
     public void move(double dx, double dy, int mapSize) {
@@ -67,18 +72,58 @@ public class Player {
         return availableUpgrades.subList(0, Math.min(3, availableUpgrades.size()));
     }
 
-    public void applyUpgrade(UpgradeType upgrade) {
-        switch (upgrade) {
+    public void applyUpgrade(UpgradeType upgradeType) {
+        Upgrade upgrade;
+        switch (upgradeType) {
             case SPEED:
-                speed *= 1.1;
+                upgrade = new SpeedUpgrade();
                 break;
             case DAMAGE:
-                bulletDamage += 5;
+                upgrade = new DamageUpgrade();
                 break;
             case FIRE_RATE:
-                fireRate = Math.max(100, fireRate - 50);
+                upgrade = new FireRateUpgrade();
                 break;
+            default:
+                throw new IllegalArgumentException("Unknown upgrade type: " + upgradeType);
         }
+        upgrade.apply(this);
+    }
+
+    public void increaseBulletDamage(int amount) {
+        bulletDamage += amount;
+    }
+
+    public void decreaseFireRate(int amount) {
+        fireRate = Math.max(100, fireRate - amount);
+    }
+
+    public void increaseSpeed(double multiplier) {
+        speed *= multiplier;
+    }
+
+    public void applyShopUpgrade(ShopUpgradeType upgrade) {
+        shop.applyShopUpgrade(upgrade);
+    }
+
+    public boolean canAffordShopUpgrade(ShopUpgradeType upgrade) {
+        return shop.canAffordShopUpgrade(upgrade);
+    }
+
+    public int getShopUpgradeCost(ShopUpgradeType upgrade) {
+        return shop.getShopUpgradeCost(upgrade);
+    }
+
+    public boolean canUpgrade(ShopUpgradeType upgrade) {
+        return shop.canUpgrade(upgrade);
+    }
+
+    public int getShopUpgradeLevel(ShopUpgradeType upgrade) {
+        return shop.getShopUpgradeLevel(upgrade);
+    }
+
+    public void purchaseUpgrade(ShopUpgradeType upgrade) {
+        shop.purchaseUpgrade(upgrade);
     }
 
     public void takeDamage(int damage) {
@@ -92,14 +137,33 @@ public class Player {
         }
     }
 
+    public void addCoins(int amount) {
+        coins += amount;
+        saveCoins();
+    }
+
+    public int getCoins() {
+        return coins;
+    }
+
+    public void saveCoins() {
+        Preferences prefs = Preferences.userNodeForPackage(Player.class);
+        prefs.putInt("playerCoins", coins);
+    }
+
+    private int loadCoins() {
+        Preferences prefs = Preferences.userNodeForPackage(Player.class);
+        return prefs.getInt("playerCoins", 0);
+    }
+
     public void reset() {
         health = maxHealth;
         level = 1;
         xp = 0;
         xpToNextLevel = 100;
-        speed = 5.0;
-        fireRate = 150;
-        bulletDamage = 10;
+        speed = 5.0 * Math.pow(1.03, shop.getShopUpgradeLevel(ShopUpgradeType.SPEED));
+        fireRate = Math.max(100, 150 - (shop.getShopUpgradeLevel(ShopUpgradeType.FIRE_RATE) * 10));
+        bulletDamage = 10 + shop.getShopUpgradeLevel(ShopUpgradeType.DAMAGE);
         lastShotTime = 0;
     }
 
@@ -117,6 +181,10 @@ public class Player {
     public int getXp() { return xp; }
     public int getXpToNextLevel() { return xpToNextLevel; }
     public int getBulletDamage() { return bulletDamage; }
+
+    public Shop getShop() {
+        return shop;
+    }
 
     public void draw(Graphics2D g2d, double cameraOffsetX, double cameraOffsetY) {
         int drawX = (int)(x - cameraOffsetX);
