@@ -103,6 +103,7 @@ public abstract class Enemy {
 
     public abstract int getXpReward();
     public abstract int getDamage();
+    public abstract int getCoinReward();
 
     public double getX() { return x; }
     public double getY() { return y; }

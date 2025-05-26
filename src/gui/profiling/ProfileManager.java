@@ -163,6 +163,8 @@ public class ProfileManager {
 
             if (option == JOptionPane.YES_OPTION) {
                 loadSelectedProfile(frame, bundle);
+            } else {
+                frame.resetPlayerCoins();
             }
         }
     }
@@ -278,7 +280,6 @@ public class ProfileManager {
                 saveOptions[2]
         );
 
-        // Обработка выбора сохранения
         if (saveChoice == JOptionPane.YES_OPTION) {
             boolean saved = saveProfileWithValidation(frame, bundle);
             if (saved) {
@@ -287,7 +288,5 @@ public class ProfileManager {
         } else if (saveChoice == JOptionPane.NO_OPTION) {
             System.exit(0);
         }
-        // CANCEL - ничего не делаем (остаёмся в приложении)
     }
-
 }

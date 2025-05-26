@@ -82,6 +82,14 @@ public class MainApplicationFrame extends JFrame {
             states.put(entry.getKey(), WindowStateManager.getWindowStateWithFocus(entry.getValue(), entry.getKey().equals("logWindow")));
         }
 
+        if (windows.containsKey("gameWindow")) {
+            GameWindow gameWindow = (GameWindow) windows.get("gameWindow");
+            states.put("playerCoins", gameWindow.getPlayer().getCoins());
+            for (gui.PlayerMechanics.ShopUpgradeType upgradeType : gui.PlayerMechanics.ShopUpgradeType.values()) {
+                states.put(upgradeType.name() + "Level", gameWindow.getPlayer().getShopUpgradeLevel(upgradeType));
+            }
+        }
+
         ProfileManager.saveProfile(profileName, states);
     }
 
@@ -90,6 +98,24 @@ public class MainApplicationFrame extends JFrame {
 
         updateLocaleFromProfile(states);
         WindowStateManager.applyWindowStates(this, states);
+
+        if (windows.containsKey("gameWindow")) {
+            GameWindow gameWindow = (GameWindow) windows.get("gameWindow");
+            if (states.containsKey("playerCoins")) {
+                int coins = ((Number) states.get("playerCoins")).intValue();
+                gameWindow.getPlayer().addCoins(coins - gameWindow.getPlayer().getCoins());
+            }
+            for (gui.PlayerMechanics.ShopUpgradeType upgradeType : gui.PlayerMechanics.ShopUpgradeType.values()) {
+                String key = upgradeType.name() + "Level";
+                if (states.containsKey(key)) {
+                    int level = ((Number) states.get(key)).intValue();
+                    for (int i = gameWindow.getPlayer().getShopUpgradeLevel(upgradeType); i < level; i++) {
+                        gameWindow.getPlayer().applyShopUpgrade(upgradeType);
+                    }
+                }
+            }
+        }
+
         setupMenuBar();
     }
 
@@ -184,6 +210,13 @@ public class MainApplicationFrame extends JFrame {
             addWindow("gameWindow", gameWindow);
         } else {
             windows.get("gameWindow").toFront();
+        }
+    }
+
+    public void resetPlayerCoins() {
+        if (windows.containsKey("gameWindow")) {
+            GameWindow gameWindow = (GameWindow) windows.get("gameWindow");
+            gameWindow.getPlayer().addCoins(-gameWindow.getPlayer().getCoins());
         }
     }
 
