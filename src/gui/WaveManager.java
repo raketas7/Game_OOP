@@ -2,6 +2,7 @@ package gui;
 
 import gui.Enemies.*;
 import gui.PlayerMechanics.Player;
+import gui.Visuals.GameVisualizer;
 
 import java.util.*;
 import java.awt.Rectangle;
@@ -140,5 +141,9 @@ public class WaveManager {
         pointsAvailable = 0;
         enemiesAlive = 0;
         lastSpawnTime = 0;
+    }
+
+    public void setLastSpawnTime(long time) {
+        this.lastSpawnTime = time;
     }
 }

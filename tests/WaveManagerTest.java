@@ -1,5 +1,5 @@
 import gui.Enemies.*;
-import gui.GameVisualizer;
+import gui.Visuals.GameVisualizer;
 import gui.PlayerMechanics.Player;
 import gui.WaveManager;
 import org.junit.Before;
@@ -33,13 +33,8 @@ public class WaveManagerTest {
         waveManager.setEnemiesAlive(1);
         assertFalse(waveManager.shouldSpawnWave());
 
-        // Прошло время кд, даже если есть живые враги
-        waveManager.startNextWave();
-        try {
-            Thread.sleep(WaveManager.getWaveCooldown() + 100);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        // Имитируем прошедшее время кд
+        waveManager.setLastSpawnTime(System.currentTimeMillis() - WaveManager.getWaveCooldown() - 100);
         assertTrue(waveManager.shouldSpawnWave());
 
         // Нет врагов, и кд прошел

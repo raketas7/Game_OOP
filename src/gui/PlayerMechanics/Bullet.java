@@ -2,7 +2,7 @@ package gui.PlayerMechanics;
 
 import java.awt.*;
 
-public class Bullet {
+public abstract class Bullet {
     private double x;
     private double y;
     private double prevX;
@@ -10,11 +10,10 @@ public class Bullet {
     private final double vx;
     private final double vy;
     private final int size = 12;
-    private final double speed = 10.0;
     private final int damage;
     private boolean isActive = true;
     private final long creationTime;
-    private static final long LIFETIME = 5000;
+    protected static final long LIFETIME = 5000;
 
     public Bullet(double startX, double startY, double targetX, double targetY, int bulletDamage) {
         this.x = startX;
@@ -27,6 +26,7 @@ public class Bullet {
         double dy = targetY - startY;
         double distance = Math.sqrt(dx * dx + dy * dy);
         if (distance > 0) {
+            double speed = 10.0;
             this.vx = (dx / distance) * speed;
             this.vy = (dy / distance) * speed;
         } else {
@@ -83,4 +83,6 @@ public class Bullet {
     public void deactivate() { isActive = false; }
     public double getX() { return x; }
     public double getY() { return y; }
+
+    protected abstract long getCurrentTime();
 }
