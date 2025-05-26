@@ -32,18 +32,21 @@ public class WindowStateManager {
     public static Map<String, Object> getWindowState(JInternalFrame window) throws PropertyVetoException {
         Map<String, Object> state = new HashMap<>();
 
+        // 1. Проверяем и сохраняем свернутость
         boolean wasIconified = window.isIcon();
         state.put("iconified", wasIconified);
         if (wasIconified) {
-            window.setIcon(false);
+            window.setIcon(false); // Разворачиваем для получения реальных координат
         }
 
+        // 2. Проверяем и сохраняем максимизацию
         boolean wasMaximized = window.isMaximum();
         state.put("maximized", wasMaximized);
         if (wasMaximized) {
-            window.setMaximum(false);
+            window.setMaximum(false); // Восстанавливаем нормальный размер
         }
 
+        // 3. Сохраняем остальные параметры
         state.put("closed", window.isClosed());
         Rectangle bounds = window.getBounds();
         state.put("x", bounds.x);
@@ -52,6 +55,7 @@ public class WindowStateManager {
         state.put("height", bounds.height);
         state.put("visible", window.isVisible() && !window.isClosed());
 
+        // 4. Восстанавливаем исходные состояния в обратном порядке
         if (wasMaximized) {
             window.setMaximum(true);
         }
@@ -70,14 +74,17 @@ public class WindowStateManager {
         if (window == null) return;
 
         try {
+            // 1. Сбрасываем все специальные состояния
             resetWindowState(window);
 
+            // 2. Устанавливаем базовые параметры (координаты и размеры)
             int minSize = windowId.equals("logWindow") ? 300 : 400;
             int x = getIntValue(state.get("x"));
             int y = getIntValue(state.get("y"));
             int width = Math.max(minSize, getIntValue(state.get("width")));
             int height = Math.max(minSize, getIntValue(state.get("height")));
 
+            // Корректировка координат, чтобы окно было видимым
             if (x + width < 0) x = 0;
             else if (x > screenBounds.width) x = screenBounds.width - width;
             if (y + height < 0) y = 0;
@@ -90,10 +97,12 @@ public class WindowStateManager {
                 frame.getContentPane().add(window);
             }
 
+            // 3. Применяем максимизацию (если нужно)
             if (Boolean.TRUE.equals(state.get("maximized"))) {
                 window.setMaximum(true);
             }
 
+            // 4. Применяем свернутость (если нужно)
             if (Boolean.TRUE.equals(state.get("iconified"))) {
                 window.setIcon(true);
             }
@@ -105,6 +114,7 @@ public class WindowStateManager {
             Logger.error("Error restoring window state for " + windowId + ": " + e.getMessage());
         }
     }
+
 
     public static void applyWindowSpecialState(JInternalFrame window, Map<String, Object> state) {
         if (state == null || window == null) return;
@@ -131,8 +141,9 @@ public class WindowStateManager {
         GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
         Rectangle screenBounds = gd.getDefaultConfiguration().getBounds();
 
+        // Создаём отсутствующие окна
         for (String windowId : states.keySet()) {
-            if (windowId.equals("language") || windowId.equals("playerCoins") || windowId.contains("Level")) continue;
+            if (windowId.equals("language")) continue;
             if (!frame.getInternalWindows().containsKey(windowId) || frame.getInternalWindows().get(windowId).isClosed()) {
                 JInternalFrame window = createWindow(windowId, frame.logSource, frame.bundle);
                 if (window != null) {
@@ -141,6 +152,7 @@ public class WindowStateManager {
             }
         }
 
+        // Применяем состояния ко всем окнам
         for (String windowId : frame.getInternalWindows().keySet()) {
             Map<String, Object> state = (Map<String, Object>) states.get(windowId);
             if (state != null) {
@@ -148,6 +160,7 @@ public class WindowStateManager {
             }
         }
 
+        // Применяем специальные состояния
         SwingUtilities.invokeLater(() -> applySpecialStates(frame, states));
     }
 

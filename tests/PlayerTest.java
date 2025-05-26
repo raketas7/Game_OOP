@@ -1,4 +1,4 @@
-import gui.Visuals.GameVisualizer;
+import gui.GameVisualizer;
 import gui.PlayerMechanics.Player;
 import org.junit.Before;
 import org.junit.Test;

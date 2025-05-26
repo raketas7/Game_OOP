@@ -1,8 +1,6 @@
 package gui.profiling;
 
 import gui.MainApplicationFrame;
-import gui.windows.GameWindow;
-import gui.PlayerMechanics.Player;
 import log.Logger;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -96,11 +94,13 @@ public class ProfileManager {
             return null;
         }
 
+        // Создаем массив опций с переведенными текстами
         Object[] options = {
                 bundle.getString("loadButtonText"),
                 bundle.getString("cancelButtonText")
         };
 
+        // Создаем диалог с переведенными текстами
         JOptionPane pane = new JOptionPane(
                 bundle.getString("selectProfileToLoad"),
                 JOptionPane.QUESTION_MESSAGE,
@@ -110,6 +110,7 @@ public class ProfileManager {
                 options[0]
         );
 
+        // Получаем выбранный профиль
         Object selectedValue = pane.getValue();
         if (selectedValue == null ||
                 selectedValue.equals(bundle.getString("cancelButtonText")) ||
@@ -117,6 +118,7 @@ public class ProfileManager {
             return null;
         }
 
+        // Получаем выбранный профиль из ComboBox
         JComboBox<String> comboBox = new JComboBox<>(profiles.toArray(new String[0]));
         comboBox.setSelectedIndex(0);
         pane.setMessage(new Object[] {bundle.getString("selectProfileToLoad"), comboBox});
@@ -161,9 +163,6 @@ public class ProfileManager {
 
             if (option == JOptionPane.YES_OPTION) {
                 loadSelectedProfile(frame, bundle);
-            } else if (option == JOptionPane.NO_OPTION) {
-                // Reset player's coins to 0 when "No" is selected
-                frame.resetPlayerCoins();
             }
         }
     }
@@ -194,7 +193,7 @@ public class ProfileManager {
             );
 
             if (profileName == null) {
-                return false; // User cancelled input
+                return false; // Пользователь отменил ввод
             }
 
             if (!isValidProfileName(profileName)) {
@@ -239,6 +238,7 @@ public class ProfileManager {
     }
 
     public static void confirmAndClose(MainApplicationFrame frame, ResourceBundle bundle) {
+        // Сначала спрашиваем подтверждение выхода
         Object[] exitOptions = {
                 bundle.getString("yesButtonText"),
                 bundle.getString("noButtonText")
@@ -246,7 +246,7 @@ public class ProfileManager {
 
         int exitChoice = JOptionPane.showOptionDialog(
                 frame,
-                bundle.getString("confirmExitQuestion"),
+                bundle.getString("confirmExitQuestion"), // Нужно добавить этот ключ в ресурсы
                 bundle.getString("exitConfirmation"),
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.QUESTION_MESSAGE,
@@ -255,10 +255,12 @@ public class ProfileManager {
                 exitOptions[1]
         );
 
+        // Если пользователь не хочет выходить, просто возвращаемся
         if (exitChoice != JOptionPane.YES_OPTION) {
             return;
         }
 
+        // Теперь спрашиваем о сохранении
         Object[] saveOptions = {
                 bundle.getString("yesButtonText"),
                 bundle.getString("noButtonText"),
@@ -276,6 +278,7 @@ public class ProfileManager {
                 saveOptions[2]
         );
 
+        // Обработка выбора сохранения
         if (saveChoice == JOptionPane.YES_OPTION) {
             boolean saved = saveProfileWithValidation(frame, bundle);
             if (saved) {
@@ -284,6 +287,7 @@ public class ProfileManager {
         } else if (saveChoice == JOptionPane.NO_OPTION) {
             System.exit(0);
         }
-        // CANCEL - do nothing (stay in application)
+        // CANCEL - ничего не делаем (остаёмся в приложении)
     }
+
 }
