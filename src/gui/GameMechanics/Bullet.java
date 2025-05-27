@@ -1,8 +1,9 @@
-package gui.PlayerMechanics;
+package gui.GameMechanics;
 
 import java.awt.*;
+import java.util.function.Supplier;
 
-public abstract class Bullet {
+public class Bullet {
     private double x;
     private double y;
     private double prevX;
@@ -14,14 +15,20 @@ public abstract class Bullet {
     private boolean isActive = true;
     private final long creationTime;
     protected static final long LIFETIME = 5000;
+    private final Supplier<Long> timeSupplier; // Added for injectable time
 
     public Bullet(double startX, double startY, double targetX, double targetY, int bulletDamage) {
+        this(startX, startY, targetX, targetY, bulletDamage, System::currentTimeMillis);
+    }
+
+    public Bullet(double startX, double startY, double targetX, double targetY, int bulletDamage, Supplier<Long> timeSupplier) {
         this.x = startX;
         this.y = startY;
         this.prevX = startX;
         this.prevY = startY;
-        this.creationTime = System.currentTimeMillis();
+        this.creationTime = timeSupplier.get();
         this.damage = bulletDamage;
+        this.timeSupplier = timeSupplier;
         double dx = targetX - startX;
         double dy = targetY - startY;
         double distance = Math.sqrt(dx * dx + dy * dy);
@@ -38,7 +45,7 @@ public abstract class Bullet {
     public void update() {
         if (isActive) {
             // Проверяем время жизни
-            if (System.currentTimeMillis() - creationTime >= LIFETIME) {
+            if (timeSupplier.get() - creationTime >= LIFETIME) {
                 isActive = false;
                 return;
             }
@@ -83,6 +90,4 @@ public abstract class Bullet {
     public void deactivate() { isActive = false; }
     public double getX() { return x; }
     public double getY() { return y; }
-
-    protected abstract long getCurrentTime();
 }

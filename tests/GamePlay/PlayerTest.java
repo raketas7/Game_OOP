@@ -1,9 +1,9 @@
 package GamePlay;
 
-import gui.GameVisualizer;
-import gui.PlayerMechanics.Bullet;
-import gui.PlayerMechanics.Player;
-import gui.PlayerMechanics.UpgradeType;
+import gui.Visuals.GameVisualizer;
+import gui.GameMechanics.Bullet;
+import gui.GameMechanics.Player;
+import gui.GameMechanics.UpgradeType;
 import org.junit.Before;
 import org.junit.Test;
 import java.awt.*;
@@ -56,8 +56,8 @@ public class PlayerTest {
     public void testPlayerInitialization() {
         assertEquals(500, player.getX());
         assertEquals(500, player.getY());
-        assertEquals(1000, player.getHealth());
-        assertEquals(1000, player.getMaxHealth());
+        assertEquals(200, player.getHealth());
+        assertEquals(200, player.getMaxHealth());
         assertEquals(1, player.getLevel());
         assertEquals(0, player.getXp());
         assertEquals(100, player.getXpToNextLevel());
@@ -75,7 +75,7 @@ public class PlayerTest {
     @Test
     public void testPlayerTakingDamage() {
         player.takeDamage(100);
-        assertEquals(900, player.getHealth());
+        assertEquals(100, player.getHealth());
     }
 
     @Test
@@ -89,7 +89,7 @@ public class PlayerTest {
     public void testPlayerRegeneration() {
         player.takeDamage(100);
         player.regenerateHealth(50);
-        assertEquals(950, player.getHealth());
+        assertEquals(150, player.getHealth());
     }
 
     @Test

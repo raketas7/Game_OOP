@@ -4,7 +4,7 @@ import gui.Enemies.BasicEnemy;
 import gui.Enemies.Enemy;
 import gui.Enemies.FastEnemy;
 import gui.Enemies.TankEnemy;
-import gui.PlayerMechanics.Player;
+import gui.GameMechanics.Player;
 import org.junit.Before;
 import org.junit.Test;
 import java.awt.*;
