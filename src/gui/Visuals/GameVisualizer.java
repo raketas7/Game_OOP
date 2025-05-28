@@ -5,6 +5,7 @@ import gui.GameMechanics.Player;
 import gui.GameMechanics.Bullet;
 import gui.GameMechanics.ShopUpgradeType;
 import gui.GameMechanics.UpgradeType;
+import gui.GameMechanics.Achievement;
 import gui.WaveManager;
 
 import javax.imageio.ImageIO;
@@ -40,23 +41,49 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
     protected boolean gameOver = false;
     private int frameCounter = 0;
     protected int countdown = 10;
-    private Timer countdownTimer;
-    public enum GameState { START_SCREEN, PLAYING, GAME_OVER, SHOP }
+
+    public enum GameState { START_SCREEN, PLAYING, GAME_OVER, SHOP, ACHIEVEMENTS }
     protected GameState gameState = GameState.START_SCREEN;
     protected JButton startButton;
     protected JButton shopButton;
+    protected JButton achievementsButton;
     protected JPanel shopPanel;
+    protected JPanel achievementsPanel;
+    private final List<Achievement> achievements;
 
     public GameVisualizer(ResourceBundle bundle) {
         this.bundle = bundle;
-        player = new Player(MAP_SIZE / 2.0, MAP_SIZE / 2.0);
-        waveManager = new WaveManager();
+        this.achievements = initializeAchievements();
+        this.player = new Player(MAP_SIZE / 2.0, MAP_SIZE / 2.0, achievements);
+        this.waveManager = new WaveManager();
         initUI();
         loadResources();
         setupTimers();
         initStartButton();
         initShopButton();
+        initAchievementsButton();
         initShopPanel();
+        initAchievementsPanel();
+    }
+
+    private List<Achievement> initializeAchievements() {
+        List<Achievement> achievementList = new ArrayList<>();
+        achievementList.add(new Achievement(
+                bundle.getString("achievementFirstKillName"),
+                bundle.getString("achievementFirstKillDesc"),
+                1
+        ));
+        achievementList.add(new Achievement(
+                bundle.getString("achievementFiveKillsName"),
+                bundle.getString("achievementFiveKillsDesc"),
+                5
+        ));
+        achievementList.add(new Achievement(
+                bundle.getString("achievementFifteenKillsName"),
+                bundle.getString("achievementFifteenKillsDesc"),
+                15
+        ));
+        return achievementList;
     }
 
     public Set<Integer> getActiveKeys() { return activeKeys; }
@@ -67,6 +94,7 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
     public List<Enemy> getEnemies() { return enemies; }
     public Player getPlayer() { return player; }
     public WaveManager getWaveManager() { return waveManager; }
+
     private void initUI() {
         setLayout(null);
         updateWindowSize();
@@ -82,11 +110,13 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
                 if (gameState == GameState.START_SCREEN) {
                     startButton.requestFocusInWindow();
                     shopButton.requestFocusInWindow();
+                    achievementsButton.requestFocusInWindow();
                 }
             }
         });
         setDoubleBuffered(true);
     }
+
     private void initStartButton() {
         startButton = new JButton(bundle.getString("startButtonText"));
         startButton.setFont(new Font("Arial", Font.BOLD, 24));
@@ -96,6 +126,7 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
             gameState = GameState.PLAYING;
             startButton.setVisible(false);
             shopButton.setVisible(false);
+            achievementsButton.setVisible(false);
             requestFocusInWindow();
             repaint();
         });
@@ -111,12 +142,31 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
             gameState = GameState.SHOP;
             startButton.setVisible(false);
             shopButton.setVisible(false);
+            achievementsButton.setVisible(false);
             shopPanel.setVisible(true);
             updateShopButtons();
             requestFocusInWindow();
             repaint();
         });
         add(shopButton);
+    }
+
+    private void initAchievementsButton() {
+        achievementsButton = new JButton(bundle.getString("achievementsButtonText"));
+        achievementsButton.setFont(new Font("Arial", Font.BOLD, 24));
+        achievementsButton.setBounds(windowWidth / 2 - 100, windowHeight / 2 + 170, 200, 50);
+        achievementsButton.setVisible(true);
+        achievementsButton.addActionListener(e -> {
+            gameState = GameState.ACHIEVEMENTS;
+            startButton.setVisible(false);
+            shopButton.setVisible(false);
+            achievementsButton.setVisible(false);
+            achievementsPanel.setVisible(true);
+            updateAchievementsPanel();
+            requestFocusInWindow();
+            repaint();
+        });
+        add(achievementsButton);
     }
 
     private void initShopPanel() {
@@ -138,11 +188,57 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
             shopPanel.setVisible(false);
             startButton.setVisible(true);
             shopButton.setVisible(true);
+            achievementsButton.setVisible(true);
             repaint();
         });
         shopPanel.add(backButton);
         shopPanel.setVisible(false);
         add(shopPanel);
+    }
+
+    private void initAchievementsPanel() {
+        achievementsPanel = new JPanel();
+        achievementsPanel.setLayout(new GridLayout(achievements.size() + 1, 1, 10, 10));
+        achievementsPanel.setBounds(windowWidth / 2 - 200, windowHeight / 2 - 100, 400, 50 * (achievements.size() + 1));
+        achievementsPanel.setOpaque(false);
+
+        for (Achievement achievement : achievements) {
+            JLabel label = new JLabel();
+            updateAchievementLabelText(label, achievement);
+            achievementsPanel.add(label);
+        }
+
+        JButton backButton = new JButton(bundle.getString("backButtonText"));
+        backButton.addActionListener(e -> {
+            gameState = GameState.START_SCREEN;
+            achievementsPanel.setVisible(false);
+            startButton.setVisible(true);
+            shopButton.setVisible(true);
+            achievementsButton.setVisible(true);
+            repaint();
+        });
+        achievementsPanel.add(backButton);
+        achievementsPanel.setVisible(false);
+        add(achievementsPanel);
+    }
+
+    private void updateAchievementLabelText(JLabel label, Achievement achievement) {
+        achievement.updateStatus(player.getEnemiesKilled());
+        String status = achievement.isUnlocked() ? bundle.getString("unlockedText") : bundle.getString("lockedText");
+        label.setText(String.format("%s: %s (%s)",
+                achievement.getName(), achievement.getDescription(), status));
+        label.setFont(new Font("Arial", Font.PLAIN, 18));
+        label.setForeground(Color.WHITE);
+    }
+
+    public void updateAchievementsPanel() {
+        int index = 0;
+        for (Component comp : achievementsPanel.getComponents()) {
+            if (comp instanceof JLabel) {
+                updateAchievementLabelText((JLabel) comp, achievements.get(index));
+                index++;
+            }
+        }
     }
 
     private void updateShopButtonText(JButton button, ShopUpgradeType upgrade) {
@@ -180,6 +276,7 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
             e.printStackTrace();
         }
     }
+
     private void setupTimers() {
         new Timer(true).scheduleAtFixedRate(new TimerTask() {
             @Override
@@ -203,7 +300,7 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
                 }
             }
         }, 0, 20);
-        countdownTimer = new Timer(true);
+        Timer countdownTimer = new Timer(true);
         countdownTimer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
@@ -217,6 +314,7 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
             }
         }, 0, 1000);
     }
+
     private void resetGame() {
         player.reset();
         enemies.clear();
@@ -228,9 +326,12 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
         gameState = GameState.START_SCREEN;
         startButton.setBounds(windowWidth / 2 - 100, windowHeight / 2 + 50, 200, 50);
         shopButton.setBounds(windowWidth / 2 - 100, windowHeight / 2 + 110, 200, 50);
+        achievementsButton.setBounds(windowWidth / 2 - 100, windowHeight / 2 + 170, 200, 50);
         startButton.setVisible(true);
         shopButton.setVisible(true);
+        achievementsButton.setVisible(true);
         shopPanel.setVisible(false);
+        achievementsPanel.setVisible(false);
         repaint();
     }
 
@@ -243,25 +344,33 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
         if (shopButton != null) {
             shopButton.setBounds(windowWidth / 2 - 100, windowHeight / 2 + 110, 200, 50);
         }
+        if (achievementsButton != null) {
+            achievementsButton.setBounds(windowWidth / 2 - 100, windowHeight / 2 + 170, 200, 50);
+        }
         if (shopPanel != null) {
             shopPanel.setBounds(windowWidth / 2 - 150, windowHeight / 2 - 100, 300, 50 * (player.getShop().getUpgrades().size() + 1));
+        }
+        if (achievementsPanel != null) {
+            achievementsPanel.setBounds(windowWidth / 2 - 200, windowHeight / 2 - 100, 400, 50 * (achievements.size() + 1));
         }
     }
 
     protected void movePlayer() {
         double dx = 0, dy = 0;
-        if (activeKeys.contains(KeyEvent.VK_W)) dy -= Player.calculateNormalizedSpeed(0, dy) * player.getSpeed();
-        if (activeKeys.contains(KeyEvent.VK_S)) dy += Player.calculateNormalizedSpeed(0, dy) * player.getSpeed();
-        if (activeKeys.contains(KeyEvent.VK_A)) dx -= Player.calculateNormalizedSpeed(dx, 0) * player.getSpeed();
-        if (activeKeys.contains(KeyEvent.VK_D)) dx += Player.calculateNormalizedSpeed(dx, 0) * player.getSpeed();
+        if (activeKeys.contains(KeyEvent.VK_W)) dy -= Player.calculateNormalizedSpeed(0, dy) * Player.getSpeed();
+        if (activeKeys.contains(KeyEvent.VK_S)) dy += Player.calculateNormalizedSpeed(0, dy) * Player.getSpeed();
+        if (activeKeys.contains(KeyEvent.VK_A)) dx -= Player.calculateNormalizedSpeed(dx, 0) * Player.getSpeed();
+        if (activeKeys.contains(KeyEvent.VK_D)) dx += Player.calculateNormalizedSpeed(dx, 0) * Player.getSpeed();
         player.move(dx, dy, MAP_SIZE);
     }
+
     protected void updateCamera() {
         double targetX = player.getX() - windowWidth / 2.0 + Player.SIZE / 2.0;
         double targetY = player.getY() - windowHeight / 2.0 + Player.SIZE / 2.0;
         cameraOffsetX = Math.max(0, Math.min(targetX, MAP_SIZE - windowWidth));
         cameraOffsetY = Math.max(0, Math.min(targetY, MAP_SIZE - windowHeight));
     }
+
     protected void shoot() {
         synchronized(bullets) {
             double adjustedMouseX = mouseX + cameraOffsetX;
@@ -270,6 +379,7 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
             bullets.addAll(newBullets);
         }
     }
+
     protected void updateBullets() {
         synchronized(bullets) {
             Iterator<Bullet> bulletIterator = bullets.iterator();
@@ -290,6 +400,7 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
                             if (!enemy.isAlive()) {
                                 player.addXp(enemy.getXpReward());
                                 player.addCoins(enemy.getCoinReward());
+                                player.addEnemyKill();
                                 enemyIterator.remove();
                                 waveManager.enemyDied();
                             }
@@ -307,6 +418,7 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
             }
         }
     }
+
     private void checkWaveSpawning() {
         if (gameState == GameState.PLAYING && waveManager.shouldSpawnWave()) {
             waveManager.startNextWave();
@@ -317,6 +429,7 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
             }
         }
     }
+
     protected void moveEnemies() {
         synchronized(enemies) {
             for (Enemy enemy : enemies) {
@@ -324,6 +437,7 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
             }
         }
     }
+
     protected void checkCollisions() {
         synchronized(enemies) {
             Iterator<Enemy> iterator = enemies.iterator();
@@ -335,6 +449,7 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
                     player.takeDamage(enemy.getDamage());
                     iterator.remove();
                     waveManager.enemyDied();
+                    player.addEnemyKill();
                     if (!player.isAlive()) {
                         gameOver = true;
                         isPaused = true;
@@ -345,6 +460,7 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
             }
         }
     }
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -376,6 +492,7 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
             g2d.drawString(bundle.getString("levelLabel") + player.getLevel() + " " + bundle.getString("xpLabel") + player.getXp() + "/" + player.getXpToNextLevel(), 20, 90);
             g2d.drawString(bundle.getString("healthLabel") + player.getHealth() + "/" + player.getMaxHealth(), 20, 120);
             g2d.drawString(bundle.getString("coinsLabel") + player.getCoins(), 20, 150);
+            g2d.drawString(bundle.getString("enemiesKilledLabel") + player.getEnemiesKilled(), 20, 180);
 
             if (upgradeSelectionMode) {
                 g2d.setColor(new Color(0, 0, 0, 0.7f));
@@ -414,6 +531,12 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
             g2d.drawString(bundle.getString("shopTitle"), windowWidth / 2 - 100, windowHeight / 2 - 150);
             g2d.setFont(new Font("Arial", Font.BOLD, 20));
             g2d.drawString(bundle.getString("coinsLabel") + player.getCoins(), windowWidth / 2 - 100, windowHeight / 2 - 120);
+        } else if (gameState == GameState.ACHIEVEMENTS) {
+            g2d.setColor(new Color(0, 0, 0, 0.7f));
+            g2d.fillRect(0, 0, windowWidth, windowHeight);
+            g2d.setColor(Color.WHITE);
+            g2d.setFont(new Font("Arial", Font.BOLD, 48));
+            g2d.drawString(bundle.getString("achievementsTitle"), windowWidth / 2 - 150, windowHeight / 2 - 150);
         }
     }
 
@@ -437,34 +560,46 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
             activeKeys.add(e.getKeyCode());
         }
     }
+
     @Override
     public void keyReleased(KeyEvent e) {
         if (gameState == GameState.PLAYING) {
             activeKeys.remove(e.getKeyCode());
         }
     }
+
     @Override
     public void keyTyped(KeyEvent e) {}
+
     @Override
     public void componentResized(ComponentEvent e) {
         updateWindowSize();
         updateCamera();
         repaint();
     }
+
     @Override
     public void componentMoved(ComponentEvent e) {}
+
     @Override
     public void componentShown(ComponentEvent e) {}
+
     @Override
     public void componentHidden(ComponentEvent e) {}
+
     @Override
     public void mouseMoved(MouseEvent e) {
         mouseX = e.getX();
         mouseY = e.getY();
     }
+
     @Override
     public void mouseDragged(MouseEvent e) {
         mouseX = e.getX();
         mouseY = e.getY();
+    }
+
+    public List<Achievement> getAchievements() {
+        return achievements;
     }
 }

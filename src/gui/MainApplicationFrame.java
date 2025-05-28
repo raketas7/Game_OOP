@@ -1,5 +1,7 @@
 package gui;
 
+import gui.GameMechanics.Player;
+import gui.GameMechanics.ShopUpgradeType;
 import gui.profiling.ProfileManager;
 import gui.profiling.WindowStateManager;
 import gui.windows.GameWindow;
@@ -135,21 +137,48 @@ public class MainApplicationFrame extends JFrame {
     }
 
     private void recreateUI(Map<String, Object> windowStates) {
-        boolean wasLogVisible = windows.containsKey("logWindow") && windows.get("logWindow").isVisible();
-        boolean wasGameVisible = windows.containsKey("gameWindow") && windows.get("gameWindow").isVisible();
+        // Сохраняем текущее состояние игрока
+        Player oldPlayer = null;
+        if (windows.containsKey("gameWindow")) {
+            GameWindow oldGameWindow = (GameWindow) windows.get("gameWindow");
+            oldPlayer = oldGameWindow.getPlayer();
+        }
+
+        // Удаляем старые окна
         for (JInternalFrame window : windows.values()) {
             desktopPane.remove(window);
             window.dispose();
         }
         windows.clear();
+
+        // Создаем новые окна
         LogWindow logWindow = WindowStateManager.createLogWindow(logSource, bundle);
         GameWindow gameWindow = WindowStateManager.createGameWindow(bundle);
+
+        // Восстанавливаем состояние игрока, если он был
+        if (oldPlayer != null) {
+            Player newPlayer = gameWindow.getPlayer();
+            // Копируем важные параметры из старого игрока в нового
+            newPlayer.addCoins(oldPlayer.getCoins() - newPlayer.getCoins());
+            newPlayer.setEnemiesKilled(oldPlayer.getEnemiesKilled());
+            for (ShopUpgradeType upgradeType : ShopUpgradeType.values()) {
+                int oldLevel = oldPlayer.getShopUpgradeLevel(upgradeType);
+                int newLevel = newPlayer.getShopUpgradeLevel(upgradeType);
+                for (int i = newLevel; i < oldLevel; i++) {
+                    newPlayer.applyShopUpgrade(upgradeType);
+                }
+            }
+        }
+
         windows.put("logWindow", logWindow);
         windows.put("gameWindow", gameWindow);
+
         try {
             if (windowStates != null) {
                 WindowStateManager.applyWindowStates(this, windowStates);
             } else {
+                boolean wasLogVisible = windows.containsKey("logWindow") && windows.get("logWindow").isVisible();
+                boolean wasGameVisible = windows.containsKey("gameWindow") && windows.get("gameWindow").isVisible();
                 if (wasLogVisible) {
                     logWindow.setVisible(true);
                     desktopPane.add(logWindow);
@@ -162,6 +191,7 @@ public class MainApplicationFrame extends JFrame {
         } catch (Exception e) {
             Logger.error("Error recreating UI: " + e.getMessage());
         }
+
         setupMenuBar();
         revalidate();
         repaint();
@@ -195,13 +225,6 @@ public class MainApplicationFrame extends JFrame {
             addWindow("gameWindow", gameWindow);
         } else {
             windows.get("gameWindow").toFront();
-        }
-    }
-
-    public void resetPlayerCoins() {
-        if (windows.containsKey("gameWindow")) {
-            GameWindow gameWindow = (GameWindow) windows.get("gameWindow");
-            gameWindow.getPlayer().addCoins(-gameWindow.getPlayer().getCoins());
         }
     }
 

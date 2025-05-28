@@ -34,4 +34,8 @@ public class GameWindow extends BasicWindow {
     public Player getPlayer() {
         return visualizer.getPlayer();
     }
+
+    public GameVisualizer getGameVisualizer() {
+        return visualizer;
+    }
 }

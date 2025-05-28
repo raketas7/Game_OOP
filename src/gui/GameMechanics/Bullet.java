@@ -15,7 +15,7 @@ public class Bullet {
     private boolean isActive = true;
     private final long creationTime;
     protected static final long LIFETIME = 5000;
-    private final Supplier<Long> timeSupplier; // Added for injectable time
+    private final Supplier<Long> timeSupplier;
 
     public Bullet(double startX, double startY, double targetX, double targetY, int bulletDamage) {
         this(startX, startY, targetX, targetY, bulletDamage, System::currentTimeMillis);
@@ -44,7 +44,6 @@ public class Bullet {
 
     public void update() {
         if (isActive) {
-            // Проверяем время жизни
             if (timeSupplier.get() - creationTime >= LIFETIME) {
                 isActive = false;
                 return;

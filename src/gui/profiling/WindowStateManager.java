@@ -5,15 +5,16 @@ import gui.windows.BasicWindow;
 import gui.windows.GameWindow;
 import gui.windows.LogWindow;
 import gui.GameMechanics.Player;
+import gui.GameMechanics.Achievement;
+import gui.Visuals.GameVisualizer;
 import log.Logger;
 import log.LogWindowSource;
 
 import javax.swing.*;
 import java.awt.*;
 import java.beans.PropertyVetoException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.ResourceBundle;
+import java.util.*;
+import java.util.List;
 
 public class WindowStateManager {
 
@@ -132,19 +133,37 @@ public class WindowStateManager {
         GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
         Rectangle screenBounds = gd.getDefaultConfiguration().getBounds();
 
-        // Restore player coins if present
-        if (states.containsKey("playerCoins")) {
-            JInternalFrame gameWindow = frame.getInternalWindows().get("gameWindow");
-            if (gameWindow instanceof GameWindow) {
-                Player player = ((GameWindow) gameWindow).getPlayer();
+        // Restore player coins and enemies killed if present
+        JInternalFrame gameWindow = frame.getInternalWindows().get("gameWindow");
+        if (gameWindow instanceof GameWindow) {
+            Player player = ((GameWindow) gameWindow).getPlayer();
+            if (states.containsKey("playerCoins")) {
                 int coins = ((Number) states.get("playerCoins")).intValue();
                 player.addCoins(coins - player.getCoins());
                 player.saveCoins();
             }
+            if (states.containsKey("enemiesKilled")) {
+                int enemiesKilled = ((Number) states.get("enemiesKilled")).intValue();
+                player.setEnemiesKilled(enemiesKilled);
+            }
+            // Restore achievement states
+            GameVisualizer visualizer = ((GameWindow) gameWindow).getGameVisualizer();
+            List<Achievement> achievements = visualizer.getAchievements();
+            for (int i = 0; i < achievements.size(); i++) {
+                String key = "achievement_" + i + "_unlocked";
+                if (states.containsKey(key)) {
+                    boolean isUnlocked = (Boolean) states.get(key);
+                    achievements.get(i).reset(); // Reset first
+                    if (isUnlocked) {
+                        achievements.get(i).updateStatus(player.getEnemiesKilled());
+                    }
+                }
+            }
+            visualizer.updateAchievementsPanel();
         }
 
         for (String windowId : states.keySet()) {
-            if (windowId.equals("language") || windowId.equals("playerCoins")) continue;
+            if (windowId.equals("language") || windowId.equals("playerCoins") || windowId.equals("enemiesKilled") || windowId.startsWith("achievement_")) continue;
             if (!frame.getInternalWindows().containsKey(windowId) || frame.getInternalWindows().get(windowId).isClosed()) {
                 JInternalFrame window = createWindow(windowId, frame.logSource, frame.bundle);
                 if (window != null) {
@@ -176,11 +195,18 @@ public class WindowStateManager {
             for (Map.Entry<String, JInternalFrame> entry : frame.getInternalWindows().entrySet()) {
                 states.put(entry.getKey(), getWindowStateWithFocus(entry.getValue(), entry.getKey().equals("logWindow")));
             }
-            // Add player coins to the state map
+            // Add player coins and enemies killed to the state map
             JInternalFrame gameWindow = frame.getInternalWindows().get("gameWindow");
             if (gameWindow instanceof GameWindow) {
                 Player player = ((GameWindow) gameWindow).getPlayer();
                 states.put("playerCoins", player.getCoins());
+                states.put("enemiesKilled", player.getEnemiesKilled());
+                // Save achievement states
+                GameVisualizer visualizer = ((GameWindow) gameWindow).getGameVisualizer();
+                List<Achievement> achievements = visualizer.getAchievements();
+                for (int i = 0; i < achievements.size(); i++) {
+                    states.put("achievement_" + i + "_unlocked", achievements.get(i).isUnlocked());
+                }
             }
         } catch (Exception e) {
             Logger.error("Error saving window states: " + e.getMessage());
@@ -210,9 +236,7 @@ public class WindowStateManager {
         return switch (windowId) {
             case "logWindow" -> createLogWindow(logSource, bundle);
             case "gameWindow" -> createGameWindow(bundle);
-            default -> {
-                yield null;
-            }
+            default -> null;
         };
     }
 

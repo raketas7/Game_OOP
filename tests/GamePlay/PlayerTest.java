@@ -4,10 +4,12 @@ import gui.Visuals.GameVisualizer;
 import gui.GameMechanics.Bullet;
 import gui.GameMechanics.Player;
 import gui.GameMechanics.UpgradeType;
+import gui.GameMechanics.Achievement;
 import org.junit.Before;
 import org.junit.Test;
 import java.awt.*;
 import java.util.List;
+import java.util.ArrayList;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class PlayerTest {
@@ -16,7 +18,7 @@ public class PlayerTest {
 
     @Before
     public void setUp() {
-        player = new Player(500, 500);
+        player = new Player(500.0, 500.0, new ArrayList<Achievement>());
     }
 
     @Test

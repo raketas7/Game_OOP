@@ -3,6 +3,8 @@ package gui.profiling;
 import gui.MainApplicationFrame;
 import gui.windows.GameWindow;
 import gui.GameMechanics.Player;
+import gui.GameMechanics.Achievement;
+import gui.Visuals.GameVisualizer;
 import log.Logger;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -162,13 +164,20 @@ public class ProfileManager {
             if (option == JOptionPane.YES_OPTION) {
                 loadSelectedProfile(frame, bundle);
             } else if (option == JOptionPane.NO_OPTION) {
-                // Reset player's coins to 0 when "No" is selected
+                // Reset player's coins, enemies killed, and achievements
                 JInternalFrame gameWindow = frame.getInternalWindows().get("gameWindow");
                 if (gameWindow instanceof GameWindow) {
                     Player player = ((GameWindow) gameWindow).getPlayer();
                     if (player != null) {
-                        player.addCoins(-player.getCoins()); // Subtract all current coins
-                        player.saveCoins(); // Save the new coin state
+                        player.addCoins(-player.getCoins());
+                        player.saveCoins();
+                        player.setEnemiesKilled(0);
+                        GameVisualizer visualizer = ((GameWindow) gameWindow).getGameVisualizer();
+                        List<Achievement> achievements = visualizer.getAchievements();
+                        for (Achievement achievement : achievements) {
+                            achievement.reset();
+                        }
+                        visualizer.updateAchievementsPanel();
                     }
                 }
             }
@@ -291,6 +300,5 @@ public class ProfileManager {
         } else if (saveChoice == JOptionPane.NO_OPTION) {
             System.exit(0);
         }
-        // CANCEL - do nothing (stay in application)
     }
 }
