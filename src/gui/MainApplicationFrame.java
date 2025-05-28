@@ -1,12 +1,13 @@
 package gui;
 
+import gui.GameMechanics.Player;
+import gui.GameMechanics.ShopUpgradeType;
 import gui.profiling.ProfileManager;
 import gui.profiling.WindowStateManager;
 import gui.windows.GameWindow;
 import gui.windows.LogWindow;
 import log.LogWindowSource;
 import log.Logger;
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
@@ -27,7 +28,6 @@ public class MainApplicationFrame extends JFrame {
         this.bundle = bundle;
         this.logSource = logSource;
         this.currentLocale = bundle.getLocale();
-
         initializeFrameSettings();
         createAndPositionDefaultWindows();
         ProfileManager.checkAndLoadProfile(this, bundle);
@@ -38,7 +38,6 @@ public class MainApplicationFrame extends JFrame {
     private void initializeFrameSettings() {
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
         setContentPane(desktopPane);
-
         GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
         Rectangle screenBounds = gd.getDefaultConfiguration().getBounds();
         setBounds(100, 100,
@@ -49,13 +48,10 @@ public class MainApplicationFrame extends JFrame {
     private void createAndPositionDefaultWindows() {
         GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
         Rectangle screenBounds = gd.getDefaultConfiguration().getBounds();
-
         LogWindow logWindow = WindowStateManager.createLogWindow(logSource, bundle);
         GameWindow gameWindow = WindowStateManager.createGameWindow(bundle);
-
         WindowStateManager.positionWindow(logWindow, screenBounds, 50, 50, 400, 500);
         WindowStateManager.positionWindow(gameWindow, screenBounds, 470, 50, 800, 600);
-
         addWindow("logWindow", logWindow);
         addWindow("gameWindow", gameWindow);
     }
@@ -77,9 +73,16 @@ public class MainApplicationFrame extends JFrame {
     public void saveCurrentState(String profileName) throws Exception {
         Map<String, Object> states = new HashMap<>();
         states.put("language", currentLocale.toString());
-
         for (Map.Entry<String, JInternalFrame> entry : windows.entrySet()) {
             states.put(entry.getKey(), WindowStateManager.getWindowStateWithFocus(entry.getValue(), entry.getKey().equals("logWindow")));
+        }
+
+        if (windows.containsKey("gameWindow")) {
+            GameWindow gameWindow = (GameWindow) windows.get("gameWindow");
+            states.put("playerCoins", gameWindow.getPlayer().getCoins());
+            for (gui.GameMechanics.ShopUpgradeType upgradeType : gui.GameMechanics.ShopUpgradeType.values()) {
+                states.put(upgradeType.name() + "Level", gameWindow.getPlayer().getShopUpgradeLevel(upgradeType));
+            }
         }
 
         ProfileManager.saveProfile(profileName, states);
@@ -90,22 +93,37 @@ public class MainApplicationFrame extends JFrame {
 
         updateLocaleFromProfile(states);
         WindowStateManager.applyWindowStates(this, states);
+
+        if (windows.containsKey("gameWindow")) {
+            GameWindow gameWindow = (GameWindow) windows.get("gameWindow");
+            if (states.containsKey("playerCoins")) {
+                int coins = ((Number) states.get("playerCoins")).intValue();
+                gameWindow.getPlayer().addCoins(coins - gameWindow.getPlayer().getCoins());
+            }
+            for (gui.GameMechanics.ShopUpgradeType upgradeType : gui.GameMechanics.ShopUpgradeType.values()) {
+                String key = upgradeType.name() + "Level";
+                if (states.containsKey(key)) {
+                    int level = ((Number) states.get(key)).intValue();
+                    for (int i = gameWindow.getPlayer().getShopUpgradeLevel(upgradeType); i < level; i++) {
+                        gameWindow.getPlayer().applyShopUpgrade(upgradeType);
+                    }
+                }
+            }
+        }
+
         setupMenuBar();
     }
 
     private void updateLocaleFromProfile(Map<String, Object> states) {
         if (states == null) return;
-
         String savedLanguage = (String) states.get("language");
         if (savedLanguage == null) return;
-
         Locale newLocale;
         if (savedLanguage.equals("ru") || savedLanguage.equals("ru_RU")) {
             newLocale = new Locale("ru", "RU");
         } else {
             newLocale = Locale.ENGLISH;
         }
-
         if (!newLocale.equals(currentLocale)) {
             updateLocale(newLocale);
         }
@@ -119,17 +137,38 @@ public class MainApplicationFrame extends JFrame {
     }
 
     private void recreateUI(Map<String, Object> windowStates) {
-        boolean wasLogVisible = windows.containsKey("logWindow") && windows.get("logWindow").isVisible();
-        boolean wasGameVisible = windows.containsKey("gameWindow") && windows.get("gameWindow").isVisible();
+        // Сохраняем текущее состояние игрока
+        Player oldPlayer = null;
+        if (windows.containsKey("gameWindow")) {
+            GameWindow oldGameWindow = (GameWindow) windows.get("gameWindow");
+            oldPlayer = oldGameWindow.getPlayer();
+        }
 
+        // Удаляем старые окна
         for (JInternalFrame window : windows.values()) {
             desktopPane.remove(window);
             window.dispose();
         }
         windows.clear();
 
+        // Создаем новые окна
         LogWindow logWindow = WindowStateManager.createLogWindow(logSource, bundle);
         GameWindow gameWindow = WindowStateManager.createGameWindow(bundle);
+
+        // Восстанавливаем состояние игрока, если он был
+        if (oldPlayer != null) {
+            Player newPlayer = gameWindow.getPlayer();
+            // Копируем важные параметры из старого игрока в нового
+            newPlayer.addCoins(oldPlayer.getCoins() - newPlayer.getCoins());
+            newPlayer.setEnemiesKilled(oldPlayer.getEnemiesKilled());
+            for (ShopUpgradeType upgradeType : ShopUpgradeType.values()) {
+                int oldLevel = oldPlayer.getShopUpgradeLevel(upgradeType);
+                int newLevel = newPlayer.getShopUpgradeLevel(upgradeType);
+                for (int i = newLevel; i < oldLevel; i++) {
+                    newPlayer.applyShopUpgrade(upgradeType);
+                }
+            }
+        }
 
         windows.put("logWindow", logWindow);
         windows.put("gameWindow", gameWindow);
@@ -138,6 +177,8 @@ public class MainApplicationFrame extends JFrame {
             if (windowStates != null) {
                 WindowStateManager.applyWindowStates(this, windowStates);
             } else {
+                boolean wasLogVisible = windows.containsKey("logWindow") && windows.get("logWindow").isVisible();
+                boolean wasGameVisible = windows.containsKey("gameWindow") && windows.get("gameWindow").isVisible();
                 if (wasLogVisible) {
                     logWindow.setVisible(true);
                     desktopPane.add(logWindow);

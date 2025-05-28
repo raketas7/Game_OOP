@@ -1,7 +1,8 @@
 package gui;
 
 import gui.Enemies.*;
-import gui.PlayerMechanics.Player;
+import gui.GameMechanics.Player;
+import gui.Visuals.GameVisualizer;
 
 import java.util.*;
 import java.awt.Rectangle;

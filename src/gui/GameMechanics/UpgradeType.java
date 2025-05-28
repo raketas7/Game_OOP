@@ -1,4 +1,4 @@
-package gui.PlayerMechanics;
+package gui.GameMechanics;
 
 public enum UpgradeType {
     SPEED("speedUpgradeDescription"),

@@ -12,7 +12,7 @@ public class LanguageSwitchTest {
     @Test
     public void testLanguageSwitch() {
         ResourceBundle bundleRu = ResourceBundle.getBundle("messages", new Locale("ru", "RU"));
-        assertEquals("Режим отображения", bundleRu.getString("lookAndFeelMenu"), "Некорректный текст после смены языка на русский");
+        assertEquals("Режим просмотра", bundleRu.getString("lookAndFeelMenu"), "Некорректный текст после смены языка на русский");
 
         ResourceBundle bundleEn = ResourceBundle.getBundle("messages", new Locale("en", "EN"));
         assertEquals("View Mode", bundleEn.getString("lookAndFeelMenu"), "Некорректный текст после смены языка на английский");

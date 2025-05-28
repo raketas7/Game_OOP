@@ -4,7 +4,8 @@ import gui.Enemies.BasicEnemy;
 import gui.Enemies.Enemy;
 import gui.Enemies.FastEnemy;
 import gui.Enemies.TankEnemy;
-import gui.PlayerMechanics.Player;
+import gui.GameMechanics.Player;
+import gui.GameMechanics.Achievement;
 import org.junit.Before;
 import org.junit.Test;
 import java.awt.*;
@@ -99,7 +100,7 @@ public class EnemyTest {
 
     @Test
     public void testPlayerEnemyCollision() {
-        Player player = new Player(100, 100);
+        Player player = new Player(100.0, 100.0, new ArrayList<Achievement>());
         Rectangle playerBounds = new Rectangle((int)player.getX(), (int)player.getY(), Player.SIZE, Player.SIZE);
         Rectangle enemyBounds = basicEnemy.getBounds(0, 0);
         assertTrue(playerBounds.intersects(enemyBounds));

@@ -19,7 +19,7 @@ public class LocalizationTextTest {
     @Test
     public void testRussianText() {
         ResourceBundle bundle = ResourceBundle.getBundle("messages", new Locale("ru", "RU"));
-        assertEquals("Режим отображения", bundle.getString("lookAndFeelMenu"), "Некорректный текст для lookAndFeelMenu на русском");
-        assertEquals("Выйти", bundle.getString("exitMenu"), "Некорректный текст для exitMenu на русском");
+        assertEquals("Режим просмотра", bundle.getString("lookAndFeelMenu"), "Некорректный текст для lookAndFeelMenu на русском");
+        assertEquals("Выход", bundle.getString("exitMenu"), "Некорректный текст для exitMenu на русском");
     }
 }

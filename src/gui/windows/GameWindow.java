@@ -1,6 +1,7 @@
 package gui.windows;
 
-import gui.GameVisualizer;
+import gui.GameMechanics.Player;
+import gui.Visuals.GameVisualizer;
 
 import java.awt.BorderLayout;
 import java.util.ResourceBundle;
@@ -28,5 +29,13 @@ public class GameWindow extends BasicWindow {
         setupDefaultCloseOperation();
         setTranslatedTitle(bundle);
         pack();
+    }
+
+    public Player getPlayer() {
+        return visualizer.getPlayer();
+    }
+
+    public GameVisualizer getGameVisualizer() {
+        return visualizer;
     }
 }
