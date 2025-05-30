@@ -137,13 +137,6 @@ public class MainApplicationFrame extends JFrame {
     }
 
     private void recreateUI(Map<String, Object> windowStates) {
-        // Сохраняем текущее состояние игрока
-        Player oldPlayer = null;
-        if (windows.containsKey("gameWindow")) {
-            GameWindow oldGameWindow = (GameWindow) windows.get("gameWindow");
-            oldPlayer = oldGameWindow.getPlayer();
-        }
-
         // Удаляем старые окна
         for (JInternalFrame window : windows.values()) {
             desktopPane.remove(window);
@@ -155,19 +148,14 @@ public class MainApplicationFrame extends JFrame {
         LogWindow logWindow = WindowStateManager.createLogWindow(logSource, bundle);
         GameWindow gameWindow = WindowStateManager.createGameWindow(bundle);
 
-        // Восстанавливаем состояние игрока, если он был
-        if (oldPlayer != null) {
+        // Если нет сохраненного состояния, не восстанавливаем старые данные игрока
+        if (windowStates == null) {
             Player newPlayer = gameWindow.getPlayer();
-            // Копируем важные параметры из старого игрока в нового
-            newPlayer.addCoins(oldPlayer.getCoins() - newPlayer.getCoins());
-            newPlayer.setEnemiesKilled(oldPlayer.getEnemiesKilled());
-            for (ShopUpgradeType upgradeType : ShopUpgradeType.values()) {
-                int oldLevel = oldPlayer.getShopUpgradeLevel(upgradeType);
-                int newLevel = newPlayer.getShopUpgradeLevel(upgradeType);
-                for (int i = newLevel; i < oldLevel; i++) {
-                    newPlayer.applyShopUpgrade(upgradeType);
-                }
-            }
+            newPlayer.reset(); // Гарантированный сброс
+            newPlayer.addCoins(-newPlayer.getCoins());
+            newPlayer.setEnemiesKilled(0);
+            newPlayer.saveCoins();
+            newPlayer.getShop().reset();
         }
 
         windows.put("logWindow", logWindow);

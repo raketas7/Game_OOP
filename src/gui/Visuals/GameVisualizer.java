@@ -41,7 +41,7 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
     protected boolean gameOver = false;
     private int frameCounter = 0;
     protected int countdown = 10;
-
+    private Timer countdownTimer;
     public enum GameState { START_SCREEN, PLAYING, GAME_OVER, SHOP, ACHIEVEMENTS }
     protected GameState gameState = GameState.START_SCREEN;
     protected JButton startButton;
@@ -66,7 +66,7 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
         initAchievementsPanel();
     }
 
-    private List<Achievement> initializeAchievements() {
+    public List<Achievement> initializeAchievements() {
         List<Achievement> achievementList = new ArrayList<>();
         achievementList.add(new Achievement(
                 bundle.getString("achievementFirstKillName"),
@@ -88,7 +88,6 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
         ));
         return achievementList;
     }
-
 
     public Set<Integer> getActiveKeys() { return activeKeys; }
     public int getWindowWidth() { return windowWidth; }
@@ -304,7 +303,7 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
                 }
             }
         }, 0, 20);
-        Timer countdownTimer = new Timer(true);
+        countdownTimer = new Timer(true);
         countdownTimer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
@@ -319,7 +318,7 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
         }, 0, 1000);
     }
 
-    private void resetGame() {
+    public void resetGame() {
         player.reset();
         enemies.clear();
         bullets.clear();
@@ -361,10 +360,10 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
 
     protected void movePlayer() {
         double dx = 0, dy = 0;
-        if (activeKeys.contains(KeyEvent.VK_W)) dy -= Player.calculateNormalizedSpeed(0, dy) * Player.getSpeed();
-        if (activeKeys.contains(KeyEvent.VK_S)) dy += Player.calculateNormalizedSpeed(0, dy) * Player.getSpeed();
-        if (activeKeys.contains(KeyEvent.VK_A)) dx -= Player.calculateNormalizedSpeed(dx, 0) * Player.getSpeed();
-        if (activeKeys.contains(KeyEvent.VK_D)) dx += Player.calculateNormalizedSpeed(dx, 0) * Player.getSpeed();
+        if (activeKeys.contains(KeyEvent.VK_W)) dy -= Player.calculateNormalizedSpeed(0, dy) * player.getSpeed();
+        if (activeKeys.contains(KeyEvent.VK_S)) dy += Player.calculateNormalizedSpeed(0, dy) * player.getSpeed();
+        if (activeKeys.contains(KeyEvent.VK_A)) dx -= Player.calculateNormalizedSpeed(dx, 0) * player.getSpeed();
+        if (activeKeys.contains(KeyEvent.VK_D)) dx += Player.calculateNormalizedSpeed(dx, 0) * player.getSpeed();
         player.move(dx, dy, MAP_SIZE);
     }
 

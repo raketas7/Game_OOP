@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
+import java.util.prefs.Preferences;
+import java.util.prefs.BackingStoreException;
 
 public class ProfileManager {
     public static final String PROFILES_DIR = "profiles";
@@ -177,6 +179,36 @@ public class ProfileManager {
                             achievement.reset();
                         }
                         visualizer.updateAchievementsPanel();
+                        visualizer.resetGame();
+                        Preferences prefs = Preferences.userNodeForPackage(Player.class);
+                        try {
+                            prefs.clear();
+                        } catch (BackingStoreException e) {
+                            Logger.error("Error clearing preferences: " + e.getMessage());
+                        }
+                    }
+                }
+            }
+        } else {
+            JInternalFrame gameWindow = frame.getInternalWindows().get("gameWindow");
+            if (gameWindow instanceof GameWindow) {
+                Player player = ((GameWindow) gameWindow).getPlayer();
+                if (player != null) {
+                    player.addCoins(-player.getCoins());
+                    player.saveCoins();
+                    player.setEnemiesKilled(0);
+                    GameVisualizer visualizer = ((GameWindow) gameWindow).getGameVisualizer();
+                    List<Achievement> achievements = visualizer.getAchievements();
+                    for (Achievement achievement : achievements) {
+                        achievement.reset();
+                    }
+                    visualizer.updateAchievementsPanel();
+                    visualizer.resetGame();
+                    Preferences prefs = Preferences.userNodeForPackage(Player.class);
+                    try {
+                        prefs.clear();
+                    } catch (BackingStoreException e) {
+                        Logger.error("Error clearing preferences: " + e.getMessage());
                     }
                 }
             }

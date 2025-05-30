@@ -1,21 +1,37 @@
 package profiling;
 
+import gui.MainApplicationFrame;
+import gui.windows.GameWindow;
+import gui.GameMechanics.Player;
+import gui.GameMechanics.Achievement;
+import gui.Visuals.GameVisualizer;
 import gui.profiling.ProfileManager;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.json.simple.parser.ParseException;
+
+import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+import java.util.prefs.BackingStoreException;
+import java.util.prefs.Preferences;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 public class ProfileManagerTest {
     private static final String TEST_PROFILE = "testProfile";
     private static final String INVALID_NAME = "invalid/name";
+
+    private MainApplicationFrame frame;
+    private ResourceBundle bundle;
+    private GameWindow gameWindow;
+    private Player player;
+    private GameVisualizer visualizer;
+    private Preferences preferences;
 
     @Before
     public void setUp() {
@@ -25,6 +41,19 @@ public class ProfileManagerTest {
                 file.delete();
             }
         }
+
+        frame = mock(MainApplicationFrame.class);
+        bundle = mock(ResourceBundle.class);
+        gameWindow = mock(GameWindow.class);
+        player = mock(Player.class);
+        visualizer = mock(GameVisualizer.class);
+        preferences = mock(Preferences.class);
+
+        when(frame.getInternalWindows()).thenReturn(Map.of("gameWindow", gameWindow));
+        when(gameWindow.getPlayer()).thenReturn(player);
+        when(gameWindow.getGameVisualizer()).thenReturn(visualizer);
+        when(visualizer.getAchievements()).thenReturn(new ArrayList<>());
+        when(bundle.getString(anyString())).thenReturn("mocked_string");
     }
 
     @Test
@@ -81,5 +110,29 @@ public class ProfileManagerTest {
         assertTrue(ProfileManager.isValidProfileName("valid_name"));
         assertTrue(ProfileManager.isValidProfileName("valid-name"));
         assertTrue(ProfileManager.isValidProfileName("Valid Name 123"));
+    }
+
+    @Test
+    public void checkAndLoadProfile_NoProfiles() throws BackingStoreException {
+        try (MockedStatic<JOptionPane> mockedJOptionPane = mockStatic(JOptionPane.class);
+             MockedStatic<Preferences> mockedPreferences = mockStatic(Preferences.class)) {
+            mockedJOptionPane.when(() -> JOptionPane.showOptionDialog(any(), any(), any(), anyInt(), anyInt(), any(), any(), any()))
+                    .thenReturn(JOptionPane.NO_OPTION);
+            mockedPreferences.when(() -> Preferences.userNodeForPackage(Player.class)).thenReturn(preferences);
+
+            when(player.getCoins()).thenReturn(50);
+            Achievement achievement = mock(Achievement.class);
+            when(visualizer.getAchievements()).thenReturn(List.of(achievement));
+
+            ProfileManager.checkAndLoadProfile(frame, bundle);
+
+            verify(player).addCoins(-50);
+            verify(player).saveCoins();
+            verify(player).setEnemiesKilled(0);
+            verify(achievement).reset();
+            verify(visualizer).updateAchievementsPanel();
+            verify(visualizer).resetGame();
+            verify(preferences).clear();
+        }
     }
 }
