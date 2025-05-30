@@ -71,20 +71,24 @@ public class GameVisualizer extends JPanel implements KeyListener, ComponentList
         achievementList.add(new Achievement(
                 bundle.getString("achievementFirstKillName"),
                 bundle.getString("achievementFirstKillDesc"),
+                1,
                 1
         ));
         achievementList.add(new Achievement(
                 bundle.getString("achievementFiveKillsName"),
                 bundle.getString("achievementFiveKillsDesc"),
-                5
+                5,
+                2
         ));
         achievementList.add(new Achievement(
                 bundle.getString("achievementFifteenKillsName"),
                 bundle.getString("achievementFifteenKillsDesc"),
-                15
+                15,
+                3
         ));
         return achievementList;
     }
+
 
     public Set<Integer> getActiveKeys() { return activeKeys; }
     public int getWindowWidth() { return windowWidth; }

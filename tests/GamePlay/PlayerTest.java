@@ -5,6 +5,7 @@ import gui.GameMechanics.Bullet;
 import gui.GameMechanics.Player;
 import gui.GameMechanics.UpgradeType;
 import gui.GameMechanics.Achievement;
+import gui.GameMechanics.ShopUpgradeType;
 import org.junit.Before;
 import org.junit.Test;
 import java.awt.*;
@@ -15,10 +16,14 @@ import static org.junit.jupiter.api.Assertions.*;
 public class PlayerTest {
     private Player player;
     private static final int MAP_SIZE = 1000;
+    private List<Achievement> achievements;
 
     @Before
     public void setUp() {
-        player = new Player(500.0, 500.0, new ArrayList<Achievement>());
+        achievements = new ArrayList<>();
+        achievements.add(new Achievement("First Kill", "Kill 1 enemy", 1, 1));
+        achievements.add(new Achievement("Veteran", "Kill 10 enemies", 10, 2));
+        player = new Player(500.0, 500.0, achievements);
     }
 
     @Test
@@ -113,5 +118,76 @@ public class PlayerTest {
     public void testUpgradeOptions() {
         List<UpgradeType> upgrades = player.getUpgradeOptions();
         assertEquals(3, upgrades.size());
+    }
+
+    @Test
+    public void testAchievementDamageBonus() {
+        assertEquals(13, player.getBulletDamage());
+        player.addEnemyKill();
+        assertEquals(13, player.getBulletDamage());
+        player.setEnemiesKilled(10);
+        assertEquals(13, player.getBulletDamage());
+    }
+
+
+    @Test
+    public void testShopInitialState() {
+        for (ShopUpgradeType type : ShopUpgradeType.values()) {
+            assertEquals(0, player.getShopUpgradeLevel(type));
+        }
+    }
+
+    @Test
+    public void testShopUpgradeDamage() {
+        player.addCoins(1000);
+        int initialDamage = player.getBulletDamage();
+
+        if (player.canAffordShopUpgrade(ShopUpgradeType.DAMAGE)) {
+            player.purchaseUpgrade(ShopUpgradeType.DAMAGE);
+            assertEquals(1, player.getShopUpgradeLevel(ShopUpgradeType.DAMAGE));
+            assertEquals(initialDamage + 2, player.getBulletDamage());
+        }
+    }
+
+    @Test
+    public void testShopUpgradeSpeed() {
+        player.addCoins(1000);
+        double initialSpeed = Player.getSpeed();
+
+        if (player.canAffordShopUpgrade(ShopUpgradeType.SPEED)) {
+            player.purchaseUpgrade(ShopUpgradeType.SPEED);
+            assertEquals(1, player.getShopUpgradeLevel(ShopUpgradeType.SPEED));
+            assertTrue(Player.getSpeed() > initialSpeed);
+        }
+    }
+
+    @Test
+    public void testCannotAffordShopUpgrade() {
+        player.addCoins(5);
+        for (ShopUpgradeType type : ShopUpgradeType.values()) {
+            assertTrue(player.canAffordShopUpgrade(type));
+        }
+    }
+
+    @Test
+    public void testMultipleAchievementBonuses() {
+        achievements.add(new Achievement("Destroyer", "Kill 50 enemies", 50, 3));
+        player = new Player(500.0, 500.0, achievements);
+
+        player.setEnemiesKilled(50);
+        assertEquals(16, player.getBulletDamage());
+    }
+
+    @Test
+    public void testShopReset() {
+        player.addCoins(1000);
+        player.purchaseUpgrade(ShopUpgradeType.DAMAGE);
+        player.purchaseUpgrade(ShopUpgradeType.SPEED);
+
+        player.reset();
+
+        assertEquals(1, player.getShopUpgradeLevel(ShopUpgradeType.DAMAGE));
+        assertEquals(1, player.getShopUpgradeLevel(ShopUpgradeType.SPEED));
+        assertEquals(14, player.getBulletDamage());
     }
 }
