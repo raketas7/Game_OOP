@@ -164,7 +164,6 @@ public class ProfileManager {
             if (option == JOptionPane.YES_OPTION) {
                 loadSelectedProfile(frame, bundle);
             } else if (option == JOptionPane.NO_OPTION) {
-                // Reset player's coins, enemies killed, and achievements
                 JInternalFrame gameWindow = frame.getInternalWindows().get("gameWindow");
                 if (gameWindow instanceof GameWindow) {
                     Player player = ((GameWindow) gameWindow).getPlayer();

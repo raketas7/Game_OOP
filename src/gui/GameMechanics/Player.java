@@ -199,11 +199,6 @@ public class Player {
         return prefs.getInt("enemiesKilled", 0);
     }
 
-    private void updateBulletDamage() {
-        int achievementBonus = calculateAchievementDamageBonus();
-        bulletDamage = 10 + shop.getShopUpgradeLevel(ShopUpgradeType.DAMAGE) + achievementBonus + levelUpDamageBonus;
-    }
-
     private void updateSpeed() {
         speed = 5.0 * Math.pow(1.03, shop.getShopUpgradeLevel(ShopUpgradeType.SPEED)) * levelUpSpeedMultiplier;
     }
@@ -215,19 +210,21 @@ public class Player {
     private int calculateAchievementDamageBonus() {
         int bonus = 0;
         if (achievements != null) {
-            for (int i = 0; i < achievements.size(); i++) {
-                achievements.get(i).updateStatus(enemiesKilled);
-                if (achievements.get(i).isUnlocked()) {
-                    switch (i) {
-                        case 0: bonus += 1; break;
-                        case 1: bonus += 2; break;
-                        case 2: bonus += 3; break;
-                    }
+            for (Achievement achievement : achievements) {
+                achievement.updateStatus(enemiesKilled);
+                if (achievement.isUnlocked()) {
+                    bonus += achievement.getDamageBonus();
                 }
             }
         }
         return bonus;
     }
+
+    private void updateBulletDamage() {
+        int achievementBonus = calculateAchievementDamageBonus();
+        bulletDamage = 10 + shop.getShopUpgradeLevel(ShopUpgradeType.DAMAGE) + achievementBonus + levelUpDamageBonus;
+    }
+
 
     public void reset() {
         health = maxHealth;
@@ -284,5 +281,9 @@ public class Player {
             return Math.sqrt(2) / 2;
         }
         return 1.0;
+    }
+
+    public long getFireRate() {
+        return fireRate;
     }
 }

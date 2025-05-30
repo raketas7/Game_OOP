@@ -5,11 +5,14 @@ public class Achievement {
     private final String description;
     private final int targetKills;
     private boolean isUnlocked;
+    private final int damageBonus;
 
-    public Achievement(String name, String description, int targetKills) {
+
+    public Achievement(String name, String description, int targetKills, int damageBonus) {
         this.name = name;
         this.description = description;
         this.targetKills = targetKills;
+        this.damageBonus = damageBonus;
         this.isUnlocked = false;
     }
 
@@ -33,5 +36,13 @@ public class Achievement {
 
     public boolean isUnlocked() {
         return isUnlocked;
+    }
+
+    public int getDamageBonus() {
+        return damageBonus;
+    }
+
+    public int getTargetKills() {
+        return targetKills;
     }
 }
